@@ -71,7 +71,7 @@
   .rsvp-stage{background:var(--card);border-radius:24px;padding:26px 8px;position:relative;
     user-select:none;cursor:pointer}
   .rsvp-guides{position:relative;height:110px;display:flex;align-items:center;overflow:hidden}
-  .rsvp-guides::before,.rsvp-guides::after{content:"";position:absolute;left:50%;width:2px;height:16px;
+  .rsvp-guides::before,.rsvp-guides::after{content:"";position:absolute;left:42%;width:2px;height:16px;
     background:var(--dim);transform:translateX(-50%)}
   .rsvp-guides::before{top:0} .rsvp-guides::after{bottom:0}
   .rsvp-word{position:absolute;white-space:nowrap;font-weight:700;
@@ -238,7 +238,7 @@
             <button class="btn sec" id="lr-test" style="font-size:15px">🔊 Anhören</button>
             <button class="btn sec" id="lr-rescan" style="font-size:15px">🔄 Stimmen neu suchen</button>
           </div>
-          <div class="hint">Klingt alles blechern? Am Mac/iPad lassen sich bessere Stimmen gratis nachladen: Systemeinstellungen → Bedienungshilfen → Gesprochene Inhalte → Systemstimme → Deutsch → z. B. „Petra (Premium)“ laden. Die App findet sie dann automatisch (in Safari).</div>
+          <div class="hint">Die Stimmqualität hängt vom Browser ab: Am natürlichsten klingen Edge (Katja/Conrad Natural) und Chrome (Google-Stimmen). Safari und iPhone/iPad bieten Webseiten nur Standard-Stimmen an.</div>
         </div>
         <button class="btn full" id="lr-start" style="margin-top:14px;font-size:20px">Los!</button>
         <div class="hint" id="lr-note"></div>
@@ -282,6 +282,18 @@ const LS = {
   set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} },
   del(k){ try{localStorage.removeItem(k)}catch(e){} },
 };
+
+/* Selbstheilung: fehlkodierte Umlaute (Ã¶ statt ö) in gespeicherten Texten reparieren */
+function fixMoji(s){
+  if(typeof s!=="string"||!s)return s;
+  if(/Ã[\u0080-\u00bf]/.test(s)){
+    try{
+      const f=decodeURIComponent(escape(s));
+      if(!/Ã[\u0080-\u00bf]/.test(f))return f;
+    }catch(e){}
+  }
+  return s;
+}
 
 /* ───────── Diagnose ───────── */
 const DBG={el:null};
@@ -350,6 +362,14 @@ const SPEEDS = [
   {label:"Schildkröte",emoji:"🐢",ms:700},{label:"Hase",emoji:"🐰",ms:400},
   {label:"Blitz",emoji:"⚡",ms:300},{label:"Rakete",emoji:"🚀",ms:200}];
 const ROUND=10, LISTEN_MS=8000;
+const SAMPLE_TITLE="Der kleine Drache Funki";
+const SAMPLE_TEXT=`Der kleine Drache Funki wohnt in einer Höhle hoch oben am Berg. Jeden Morgen übt er das Feuerspucken. Aber egal, wie sehr er sich anstrengt, es kommen immer nur kleine Rauchwölkchen aus seiner Nase. Die anderen Drachen lachen ihn deshalb oft aus.
+
+Eines Tages zieht ein schlimmes Gewitter auf. Der Blitz schlägt in den alten Baum neben dem Drachendorf ein. Sofort fängt das trockene Gras Feuer. Alle Drachen pusten kräftig, doch ihr Feueratem macht die Flammen nur noch größer.
+
+Da hat Funki eine Idee. Er holt tief Luft und pustet seine dicken Rauchwolken über die Flammen. Der Rauch nimmt dem Feuer die Luft weg. Nach ein paar Minuten ist der Brand gelöscht. Das ganze Dorf ist gerettet.
+
+Seit diesem Tag lacht niemand mehr über Funki. Denn jetzt wissen alle: Jeder kann etwas Besonderes, auch wenn es zuerst wie ein Fehler aussieht. Und Funki ist mächtig stolz auf seine Rauchwölkchen.`;
 const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
 const IS_SAFARI = /safari/i.test(navigator.userAgent)&&!/chrome|chromium|crios|edg|android/i.test(navigator.userAgent);
 
@@ -387,7 +407,7 @@ const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math
 
 const BW = {
   cfg: Object.assign({mic:!!SR,level:1,custom:false,speed:1},LS.get("bw_cfg",{})),
-  customText: LS.get("bw_custom",""),
+  customText: fixMoji(LS.get("bw_custom","")),
   history: LS.get("bw_hist",[]),
   micBlocked:false,
   q:[],cur:null,total:0,firstTry:0,retried:new Set(),streak:0,best:0,
@@ -668,7 +688,8 @@ const RSVP = {
     });
     // Gespeicherten Text wiederherstellen
     const saved=LS.get("rs_text",null);
-    if(saved&&saved.text){this.setText(saved.text,saved.title||"Gespeicherter Text",LS.get("rs_pos",0),true)}
+    if(saved&&saved.text){this.setText(fixMoji(saved.text),fixMoji(saved.title)||"Gespeicherter Text",LS.get("rs_pos",0),true)}
+    else this.setText(SAMPLE_TEXT,SAMPLE_TITLE);
   },
   saveCfg(){LS.set("rs_cfg",this.cfg)},
   applyCfg(){
@@ -779,12 +800,23 @@ const RSVP = {
     el.querySelector(".pre").textContent=w.slice(0,oi);
     el.querySelector(".orp").textContent=w[oi]||"";
     el.querySelector(".post").textContent=w.slice(oi+1);
-    // ORP-Buchstaben mittig ausrichten
+    // ORP-Buchstaben am Fixpunkt (42% der Breite) ausrichten
     const stage=el.parentElement;
-    const cx=stage.clientWidth/2;
+    const stageW=stage.clientWidth;
+    const cx=stageW*0.42;
+    el.style.fontSize="";                       // erst mit Normalgroesse messen
+    let wordW=el.offsetWidth;
+    if(wordW>stageW-16){                        // sehr langes Wort: verkleinern bis es passt
+      const base=parseFloat(getComputedStyle(el).fontSize);
+      el.style.fontSize=Math.max(20,base*(stageW-16)/wordW)+"px";
+      wordW=el.offsetWidth;
+    }
     const preW=el.querySelector(".pre").offsetWidth;
     const orpW=el.querySelector(".orp").offsetWidth;
-    el.style.transform=`translateX(${cx-preW-orpW/2}px)`;
+    let x=cx-preW-orpW/2;
+    x=Math.min(x,stageW-wordW-8);               // rechts nicht abschneiden
+    x=Math.max(x,8);                            // links nicht abschneiden
+    el.style.transform=`translateX(${x}px)`;
     $("rs-bar").style.width=((this.idx+1)/total*100)+"%";
     const min=Math.round((total-this.idx)/this.cfg.wpm);
     $("rs-pos").textContent=`${(this.idx+1).toLocaleString("de-AT")} / ${total.toLocaleString("de-AT")} · noch ~${min} min`;
@@ -840,7 +872,7 @@ const LR = {
   t0:null,tInt:null,curPara:0,ttsPaused:false,pointer:0,lastStatus:null,
 
   init(){
-    $("lr-text-in").value=LS.get("lr_text","");
+    $("lr-text-in").value=fixMoji(LS.get("lr_text",""))||SAMPLE_TEXT;
     $("lr-text-in").oninput=e=>LS.set("lr_text",e.target.value);
     $("lr-quiz").checked=this.cfg.quiz;
     $("lr-quiz").onchange=e=>{this.cfg.quiz=e.target.checked;this.save()};
@@ -1116,33 +1148,62 @@ const LR = {
     this.curPara=q;this.startTimer();
     const startIdx=q===0?0:this.paraEnd[q-1];
     const words=this.paras[q];
-    let text="";const offs=[];
-    words.forEach((w,i)=>{offs.push(text.length);text+=w+(i<words.length-1?" ":"")});
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang="de-DE";u.rate=this.cfg.rate;
+    // In Satz-Happen zerlegen: lange Utterances sterben in Chrome/Android sonst stumm ab
+    const chunks=[];let cw=[],cLen=0,cOff=0;
+    const flushChunk=()=>{if(cw.length){chunks.push({words:cw,off:cOff});cOff+=cw.length;cw=[];cLen=0}};
+    words.forEach(w=>{
+      cw.push(w);cLen+=w.length+1;
+      if((/[.!?\u2026]["\u00bb\u00ab')\]]?$/.test(w)&&cLen>40)||cLen>180||cw.length>=28)flushChunk();
+    });
+    flushChunk();
     const v=speechSynthesis.getVoices().find(x=>x.voiceURI===this.cfg.voice);
-    if(v)u.voice=v;
-    u.onboundary=e=>{
-      if(e.name&&e.name!=="word")return;
-      let wi=0;
-      for(let i=0;i<offs.length;i++){if(e.charIndex>=offs[i])wi=i;else break}
-      this.flat.forEach((w,j)=>w.el.classList.toggle("cur",j===startIdx+wi));
-      const el=this.flat[startIdx+wi];
-      if(el)el.el.scrollIntoView({block:"center",behavior:"smooth"});
-    };
-    u.onend=()=>{
+    const speakChunk=ci=>{
       if(!this.running)return;
-      for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
-      if(this.cfg.quiz&&!this.quizAsked.has(q)){
-        this.quizAsked.add(q);
-        $("lr-status").textContent="🧠 Kleine Frage!";
-        this.askQuiz(q,()=>{
-          $("lr-status").textContent="🔊 Weiter geht's";
-          this.speakPara(q+1);
-        });
-      }else this.speakPara(q+1);
+      if(ci>=chunks.length){
+        for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
+        if(this.cfg.quiz&&!this.quizAsked.has(q)){
+          this.quizAsked.add(q);
+          $("lr-status").textContent="\ud83e\udde0 Kleine Frage!";
+          this.askQuiz(q,()=>{
+            $("lr-status").textContent="\ud83d\udd0a Weiter geht's";
+            this.speakPara(q+1);
+          });
+        }else this.speakPara(q+1);
+        return;
+      }
+      const ch=chunks[ci];
+      let text="";const offs=[];
+      ch.words.forEach((w,i)=>{offs.push(text.length);text+=w+(i<ch.words.length-1?" ":"")});
+      // Woerter vor diesem Happen als gelesen markieren
+      for(let j=startIdx;j<startIdx+ch.off;j++)this.flat[j].el.className="w ok";
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang="de-DE";u.rate=this.cfg.rate;if(v)u.voice=v;
+      let wd=null,done=false;
+      const finish=()=>{if(done)return;done=true;clearTimeout(wd);speakChunk(ci+1)};
+      const guard=()=>{
+        if(!this.running||done)return;
+        if(this.ttsPaused){wd=setTimeout(guard,3000);return}
+        dlog("TTS","Watchdog: Happen h\u00e4ngt \u2192 weiter mit n\u00e4chstem");
+        try{speechSynthesis.cancel()}catch(e){}
+        finish();
+      };
+      u.onboundary=e=>{
+        if(e.name&&e.name!=="word")return;
+        clearTimeout(wd);wd=setTimeout(guard,9000);
+        let wi=0;
+        for(let i=0;i<offs.length;i++){if(e.charIndex>=offs[i])wi=i;else break}
+        const gi=startIdx+ch.off+wi;
+        this.flat.forEach((w,j)=>w.el.classList.toggle("cur",j===gi));
+        const el=this.flat[gi];
+        if(el)el.el.scrollIntoView({block:"center",behavior:"smooth"});
+      };
+      u.onend=finish;
+      u.onerror=ev=>{dlog("TTS","Utterance-Fehler: "+(ev.error||"?"));finish()};
+      const est=Math.max(5000,text.length*130/this.cfg.rate);
+      wd=setTimeout(guard,est+5000);
+      speechSynthesis.speak(u);
     };
-    speechSynthesis.speak(u);
+    speakChunk(0);
   },
   ttsToggle(){
     if(this.ttsPaused){speechSynthesis.resume();this.ttsPaused=false;$("lr-ttspause").textContent="⏸ Pause"}
