@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>⚡ Blitz &amp; Lese-Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#141B33; --card:#1E2747; --card2:#2A3560; --bolt:#FFD338;
+    --ink:#F4F1E4; --dim:#8B93B5; --good:#5FD08A; --retry:#FF8A5C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--night);color:var(--ink);
+    font-family:'Baloo 2','Comic Sans MS',sans-serif;min-height:100vh;
+    -webkit-tap-highlight-color:transparent}
+  h1{font-family:'Fredoka',sans-serif;color:var(--bolt);font-size:26px;margin:0;letter-spacing:1px}
+  .wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+  .topbar{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:6px}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px}
+  .tab{background:var(--card2);color:var(--ink);border:none;border-radius:14px;
+    padding:12px 6px;font:700 15px 'Baloo 2';cursor:pointer}
+  .tab.active{background:var(--bolt);color:var(--night)}
+  .card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:16px}
+  .cardtitle{font-weight:800;color:var(--bolt);margin-bottom:10px}
+  .btn{background:var(--bolt);color:var(--night);border:none;border-radius:16px;
+    padding:14px 22px;font:700 18px 'Baloo 2';cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .08s}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+  .btn.sec{background:var(--card2);color:var(--ink)}
+  .btn.good{background:var(--good)} .btn.retry{background:var(--retry)}
+  .btn.ghost{background:transparent;color:var(--dim);box-shadow:none;font-size:15px}
+  .btn:disabled{opacity:.4;cursor:default}
+  .choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:var(--card2);color:var(--ink);border:none;border-radius:14px;
+    padding:12px 14px;font:700 16px 'Baloo 2';cursor:pointer;margin-bottom:8px}
+  .choice.sel{background:var(--bolt);color:var(--night)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid2 .choice{flex-direction:column;text-align:center;margin:0;gap:2px}
+  .small{font-size:12px;opacity:.7;font-weight:500}
+  .hint{font-size:13px;color:var(--dim);margin-top:8px}
+  .warn{font-size:13px;color:var(--retry);margin-top:8px}
+  textarea,input[type=range]{width:100%}
+  textarea{border-radius:12px;border:2px solid var(--bolt);background:var(--night);
+    color:var(--ink);padding:10px;font:500 16px 'Baloo 2';resize:vertical}
+  .full{width:100%}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .between{display:flex;justify-content:space-between;align-items:center}
+  .progressbar{height:10px;background:var(--card);border-radius:6px;overflow:hidden;margin:8px 0 14px}
+  .progressbar>div{height:100%;background:var(--bolt);border-radius:6px;transition:width .3s;width:0%}
+  .stage{background:var(--card);border-radius:24px;min-height:240px;display:flex;
+    align-items:center;justify-content:center;position:relative;overflow:hidden;
+    border:3px solid transparent;transition:border-color .2s}
+  .stage.flash{border-color:var(--bolt)} .stage.ok{border-color:var(--good)} .stage.no{border-color:var(--retry)}
+  .bigword{font-size:52px;font-weight:800;letter-spacing:1px;text-align:center;
+    padding:0 12px;word-break:break-word;animation:boltIn .15s}
+  .bigword.long{font-size:36px}
+  .countnum{font:800 80px 'Fredoka';color:var(--bolt);animation:popIn .3s}
+  .statline{display:flex;justify-content:space-between;padding:4px 0;font-size:17px}
+  .statline span:first-child{color:var(--dim)}
+  .center{text-align:center}
+  .micpulse{font-size:44px;animation:pulse 1.2s infinite;display:inline-block}
+  @keyframes boltIn{0%{opacity:0;transform:scale(1.35)}18%{opacity:1;transform:scale(1)}100%{opacity:1}}
+  @keyframes popIn{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+  @keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.15)}}
+  .wig{display:inline-block;animation:wiggle 2.4s infinite;font-size:26px}
+  /* ── RSVP ── */
+  .rsvp-stage{background:var(--card);border-radius:24px;padding:26px 8px;position:relative;
+    user-select:none;cursor:pointer}
+  .rsvp-guides{position:relative;height:110px;display:flex;align-items:center;overflow:hidden}
+  .rsvp-guides::before,.rsvp-guides::after{content:"";position:absolute;left:50%;width:2px;height:16px;
+    background:var(--dim);transform:translateX(-50%)}
+  .rsvp-guides::before{top:0} .rsvp-guides::after{bottom:0}
+  .rsvp-word{position:absolute;white-space:nowrap;font-weight:700;
+    font-size:var(--rsvpsize,46px);font-family:Georgia,'Times New Roman',serif;will-change:transform}
+  .rsvp-word .orp{color:#FF5A5A}
+  .rsvp-hintline{text-align:center;color:var(--dim);font-size:13px;margin-top:6px}
+  .slider-row{display:flex;align-items:center;gap:12px;margin:6px 0}
+  .slider-row label{min-width:88px;font-size:15px;color:var(--dim)}
+  .slider-row output{min-width:74px;text-align:right;font-weight:800;color:var(--bolt)}
+  input[type=range]{accent-color:var(--bolt);height:32px}
+  .filebtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .srconly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .badge{display:inline-block;background:var(--card2);border-radius:10px;padding:3px 10px;
+    font-size:13px;color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lr-text p{margin:0 0 14px}
+  .lr-text .w{padding:1px 2px;border-radius:4px}
+  .lr-text .w.ok{color:var(--good)}
+  .lr-text .w.bad{color:var(--retry);text-decoration:underline wavy}
+  .lr-text .w.cur{background:rgba(255,211,56,.28)}
+  .qopt{display:block;width:100%;text-align:left;background:var(--card2);color:var(--ink);
+    border:none;border-radius:12px;padding:12px 14px;font:700 16px 'Baloo 2';
+    cursor:pointer;margin-bottom:8px}
+  .qopt.right{background:var(--good);color:var(--night)}
+  .qopt.wrong{background:var(--retry);color:var(--night)}
+  select{width:100%;padding:10px;border-radius:12px;background:var(--night);
+    color:var(--ink);border:2px solid var(--card2);font:500 15px 'Baloo 2'}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:400px){.bigword{font-size:44px}.bigword.long{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><span class="wig">⚡</span><h1 id="apptitle">Blitzwörter</h1><span class="wig">⚡</span></div>
+  <div class="tabs">
+    <button class="tab active" id="tab-blitz">⚡ Blitz</button>
+    <button class="tab" id="tab-rsvp">📖 Reader</button>
+    <button class="tab" id="tab-laut">📚 Lesen</button>
+  </div>
+
+  <!-- ══════════ BLITZWÖRTER ══════════ -->
+  <div id="view-blitz">
+    <div id="bw-setup">
+      <p class="center" style="color:var(--dim);margin:0 0 14px">Ein Wort blitzt kurz auf – erkennst du es?</p>
+      <div class="card">
+        <div class="cardtitle">Wer prüft die Antwort?</div>
+        <div class="grid2">
+          <button class="choice" id="bw-mode-mic"><span style="font-size:22px">🎤</span>Mikrofon<span class="small">hört automatisch zu</span></button>
+          <button class="choice" id="bw-mode-tap"><span style="font-size:22px">👆</span>Tippen<span class="small">Eltern prüfen</span></button>
+        </div>
+        <div class="hint" id="bw-micnote" hidden></div>
+      </div>
+      <div class="card">
+        <div class="cardtitle">Wörter wählen</div>
+        <div id="bw-levels"></div>
+        <button class="choice" id="bw-custombtn"><span style="font-size:22px">✏️</span>Eigene Wörter</button>
+        <textarea id="bw-customtext" rows="4" hidden placeholder="Wörter eingeben, getrennt durch Komma oder Zeile"></textarea>
+        <div class="hint" id="bw-homonote" hidden>Hinweis: Gleich klingende Wörter (das/dass, seid/seit …) zählen im Mikrofon-Modus beide als richtig.</div>
+      </div>
+      <div class="card">
+        <div class="cardtitle">Wie schnell blitzt das Wort?</div>
+        <div class="grid2" id="bw-speeds"></div>
+      </div>
+      <button class="btn full" id="bw-start" style="font-size:22px">⚡ Los geht's!</button>
+      <div class="card" id="bw-historycard" hidden style="margin-top:16px">
+        <div class="cardtitle between">Letzte Runden
+          <button class="btn ghost" id="bw-clearhist" style="padding:0">löschen</button></div>
+        <div id="bw-history"></div>
+      </div>
+    </div>
+
+    <div id="bw-play" hidden>
+      <div class="between" style="font-size:15px;color:var(--dim)">
+        <span id="bw-left"></span><span id="bw-streak"></span>
+      </div>
+      <div class="progressbar"><div id="bw-bar"></div></div>
+      <div class="stage" id="bw-stage"></div>
+      <div class="center" style="margin-top:12px">
+        <button class="btn ghost" id="bw-abort">Abbrechen und zurück</button>
+      </div>
+    </div>
+
+    <div id="bw-done" hidden class="center">
+      <div style="font-size:64px;animation:popIn .4s" id="bw-emoji"></div>
+      <div style="font-size:44px;letter-spacing:6px" id="bw-stars"></div>
+      <h2 style="font-family:'Fredoka';color:var(--bolt);margin:8px 0" id="bw-praise"></h2>
+      <div class="card" style="text-align:left">
+        <div class="statline"><span>Sofort gewusst</span><b id="bw-r1"></b></div>
+        <div class="statline"><span>Beste Blitz-Serie</span><b id="bw-r2"></b></div>
+        <div class="statline"><span>Tempo</span><b id="bw-r3"></b></div>
+      </div>
+      <p class="hint" id="bw-tip" hidden></p>
+      <button class="btn full" id="bw-again" style="margin-bottom:10px">⚡ Noch eine Runde</button>
+      <button class="btn sec full" id="bw-back">Level oder Tempo ändern</button>
+    </div>
+  </div>
+
+  <!-- ══════════ RSVP SPEED-READER ══════════ -->
+  <div id="view-rsvp" hidden>
+    <div class="card">
+      <div class="cardtitle">Text laden</div>
+      <div class="filebtns">
+        <button class="btn sec" id="rs-loadfile">📚 Datei öffnen<br><span class="small">.epub oder .txt</span></button>
+        <button class="btn sec" id="rs-pastebtn">📝 Text einfügen</button>
+      </div>
+      <input type="file" id="rs-file" class="srconly" accept=".txt,.epub,text/plain,application/epub+zip">
+      <textarea id="rs-paste" rows="5" hidden placeholder="Text hier einfügen …" style="margin-top:10px"></textarea>
+      <button class="btn full" id="rs-usepaste" hidden style="margin-top:8px">Diesen Text lesen</button>
+      <div class="hint" id="rs-fileinfo"></div>
+    </div>
+
+    <div id="rs-reader" hidden>
+      <div class="between" style="margin-bottom:6px">
+        <span class="badge" id="rs-title"></span>
+        <span style="font-size:13px;color:var(--dim)" id="rs-pos"></span>
+      </div>
+      <div class="progressbar"><div id="rs-bar"></div></div>
+      <div class="rsvp-stage" id="rs-stage">
+        <div class="rsvp-guides"><div class="rsvp-word" id="rs-word"><span class="pre"></span><span class="orp"></span><span class="post"></span></div></div>
+        <div class="rsvp-hintline" id="rs-tap">Tippen zum Starten · Leertaste = Start/Pause</div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="slider-row">
+          <label for="rs-wpm">Tempo</label>
+          <input type="range" id="rs-wpm" min="100" max="900" step="25" value="300">
+          <output id="rs-wpmout">300 WpM</output>
+        </div>
+        <div class="slider-row">
+          <label for="rs-size">Schriftgröße</label>
+          <input type="range" id="rs-size" min="28" max="64" step="2" value="46">
+          <output id="rs-sizeout">46 px</output>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sec" id="rs-back10">⏪ 10 Wörter</button>
+          <button class="btn" id="rs-playpause" style="min-width:130px">▶ Start</button>
+          <button class="btn sec" id="rs-restart">⏮ Anfang</button>
+        </div>
+      </div>
+      <div class="hint center">Satzenden und Beistriche bekommen automatisch eine kleine Pause.<br>Position und Tempo werden gespeichert.</div>
+    </div>
+  </div>
+
+  <!-- ═══ LAUTLESEN ═══ -->
+  <div id="view-laut" hidden>
+    <div id="lr-setup">
+      <div class="card">
+        <div class="cardtitle">Text für heute</div>
+        <textarea id="lr-text-in" rows="7" placeholder="Kurzen Text einfügen (ideal: 100–150 Wörter). Absätze mit Leerzeile trennen – nach jedem Absatz kommt eine Frage."></textarea>
+        <div class="grid2" style="margin-top:10px">
+          <button class="choice" id="lr-mode-self"><span style="font-size:22px">🎤</span>Selber lesen<span class="small">Mikro hört mit</span></button>
+          <button class="choice" id="lr-mode-tts"><span style="font-size:22px">🔊</span>Vorlesen lassen<span class="small">Tandem-Stimme</span></button>
+        </div>
+        <label id="lr-quizrow" style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:16px;cursor:pointer">
+          <input type="checkbox" id="lr-quiz" checked style="width:20px;height:20px;accent-color:var(--bolt)">
+          Nach jedem Absatz eine Frage stellen
+        </label>
+        <div class="slider-row" id="lr-raterow" hidden style="margin-top:10px">
+          <label for="lr-rate">Vorlese-Tempo</label>
+          <input type="range" id="lr-rate" min="0.5" max="1.4" step="0.05" value="0.9">
+          <output id="lr-rateout">0.90×</output>
+        </div>
+        <div id="lr-voicerow" hidden style="margin-top:8px">
+          <select id="lr-voice"></select>
+          <div class="grid2" style="margin-top:8px">
+            <button class="btn sec" id="lr-test" style="font-size:15px">🔊 Anhören</button>
+            <button class="btn sec" id="lr-rescan" style="font-size:15px">🔄 Stimmen neu suchen</button>
+          </div>
+          <div class="hint">Klingt alles blechern? Am Mac/iPad lassen sich bessere Stimmen gratis nachladen: Systemeinstellungen → Bedienungshilfen → Gesprochene Inhalte → Systemstimme → Deutsch → z. B. „Petra (Premium)“ laden. Die App findet sie dann automatisch (in Safari).</div>
+        </div>
+        <button class="btn full" id="lr-start" style="margin-top:14px;font-size:20px">Los!</button>
+        <div class="hint" id="lr-note"></div>
+      </div>
+    </div>
+
+    <div id="lr-run" hidden>
+      <div class="between" style="font-size:15px;color:var(--dim);margin-bottom:6px">
+        <span id="lr-status"></span><span id="lr-timer" style="font-weight:800;color:var(--bolt)">0:00</span>
+      </div>
+      <div class="card lr-text" id="lr-display" style="font-size:22px;line-height:1.9;max-height:46vh;overflow-y:auto"></div>
+      <div class="hint center" id="lr-heard" style="min-height:18px;margin-top:-8px"></div>
+      <div id="lr-quizbox" hidden class="card">
+        <div class="cardtitle">Kleine Frage 🧠</div>
+        <p id="lr-q" style="font-size:18px;margin-top:0"></p>
+        <div id="lr-opts"></div>
+        <div class="hint" id="lr-qfeed"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn sec" id="lr-stopbtn">■ Beenden</button>
+        <button class="btn" id="lr-ttspause" hidden>⏸ Pause</button>
+      </div>
+    </div>
+
+    <div id="lr-done" hidden class="center">
+      <div style="font-size:56px;animation:popIn .4s">🏁</div>
+      <h2 style="font-family:'Fredoka';color:var(--bolt);margin:8px 0" id="lr-head"></h2>
+      <div class="card" style="text-align:left" id="lr-stats"></div>
+      <div class="card" style="text-align:left" id="lr-redwords" hidden></div>
+      <button class="btn full" id="lr-again">Nochmal denselben Text</button>
+      <button class="btn sec full" id="lr-new" style="margin-top:10px">Neuer Text</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const LS = {
+  get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} },
+  del(k){ try{localStorage.removeItem(k)}catch(e){} },
+};
+
+/* ───────── Diagnose ───────── */
+const DBG={el:null};
+function dlog(who,msg){
+  if(!DBG.el)return;
+  const t=new Date();
+  const d=document.createElement("div");
+  d.textContent=t.toLocaleTimeString("de-AT")+"."+String(t.getMilliseconds()).padStart(3,"0")+" ["+who+"] "+msg;
+  DBG.el.appendChild(d);
+  while(DBG.el.childElementCount>250)DBG.el.firstChild.remove();
+  DBG.el.scrollTop=DBG.el.scrollHeight;
+}
+(function(){
+  const b=document.createElement("button");
+  b.textContent="🐞";b.title="Diagnose ein/aus";
+  b.style.cssText="position:fixed;top:10px;right:10px;z-index:99;background:#2A3560;color:#F4F1E4;border:none;border-radius:10px;padding:6px 9px;font-size:16px;cursor:pointer;opacity:.55";
+  const pl=document.createElement("div");
+  pl.style.cssText="position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:rgba(10,14,28,.97);color:#9fe08a;font:11px/1.5 ui-monospace,Menlo,monospace;padding:8px 10px;z-index:98;display:none;border-top:2px solid #FFD338;white-space:pre-wrap;word-break:break-word";
+  document.addEventListener("DOMContentLoaded",()=>{document.body.appendChild(b);document.body.appendChild(pl)});
+  if(document.readyState!=="loading"){document.body.appendChild(b);document.body.appendChild(pl)}
+  DBG.el=pl;
+  b.onclick=()=>{pl.style.display=pl.style.display==="none"?"block":"none"};
+})();
+
+/* ───────── Tabs ───────── */
+function showTab(t){
+  ["blitz","rsvp","laut"].forEach(x=>{
+    $("view-"+x).hidden = t!==x;
+    $("tab-"+x).classList.toggle("active",t===x);
+  });
+  $("apptitle").textContent = t==="blitz"?"Blitzwörter":t==="rsvp"?"Speed-Reader":"Lautlesen";
+  if(t!=="rsvp") RSVP.pause();
+  if(t!=="blitz") BW.abort(true);
+  if(t!=="laut") LR.stopAll();
+  LS.set("tab",t);
+}
+$("tab-blitz").onclick=()=>showTab("blitz");
+$("tab-rsvp").onclick=()=>showTab("rsvp");
+$("tab-laut").onclick=()=>showTab("laut");
+
+/* ═════════ BLITZWÖRTER ═════════ */
+const LEVELS = {
+  1:{name:"Häufige Wörter",emoji:"🌱",words:[
+    "und","aber","dann","weil","oder","plötzlich","deshalb","trotzdem","während","zwischen",
+    "vielleicht","gestern","heute","morgen","immer","niemals","zuerst","danach","endlich","gemeinsam",
+    "außerdem","dennoch","inzwischen","manchmal","meistens","nachher","nämlich","obwohl","schließlich","sofort",
+    "sogar","später","übrigens","vorher","wirklich","ziemlich","zusammen","draußen","drinnen","irgendwann",
+    "jedoch","natürlich","seitdem","gegenüber","wenigstens","zufällig","mehrere","dazwischen"]},
+  2:{name:"Lange Wörter",emoji:"🌳",words:[
+    "Geburtstag","Abenteuer","Überraschung","Freundschaft","Geheimnis","Bibliothek","Schokolade","Klassenzimmer","Hausaufgabe","Taschenlampe",
+    "Regenbogen","Wochenende","Lieblingsbuch","Baumhaus","Schatzkarte","Turnstunde","Ferienlager","Zauberwald","Fahrrad","Schulhof",
+    "Feuerwehrauto","Sommerferien","Spielplatz","Kindergeburtstag","Schwimmbad","Eichhörnchen","Schmetterling","Weihnachten","Abendessen","Fußballspiel",
+    "Klettergerüst","Meerschweinchen","Musikunterricht","Pausenbrot","Purzelbaum","Ritterburg","Schneemann","Süßigkeiten","Zaubertrick","Bauernhof",
+    "Erfindung","Gewitterwolke","Werkstatt","Detektivin"]},
+  3:{name:"Verwechsel-Wörter",emoji:"🦊",words:[
+    "dann","denn","wann","wenn","Haus","Maus","seid","seit","das","dass",
+    "wieder","wider","viel","fiel","Meer","mehr","Lied","Lid","Wald","bald",
+    "Stadt","statt","war","wahr","Seite","Saite","Weise","Waise","malen","mahlen",
+    "Rad","Rat","Tod","tot","bis","Biss","fest","fast","schon","schön",
+    "Ofen","offen","Hüte","Hütte","Bären","Beeren","kennen","können","legen","liegen"]},
+};
+const HOMO = {das:"dass",dass:"das",seid:"seit",seit:"seid",wieder:"wider",wider:"wieder",viel:"fiel",fiel:"viel",meer:"mehr",mehr:"meer",lied:"lid",lid:"lied",
+  stadt:"statt",statt:"stadt",war:"wahr",wahr:"war",seite:"saite",saite:"seite",weise:"waise",waise:"weise",malen:"mahlen",mahlen:"malen",
+  rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis"};
+const SPEEDS = [
+  {label:"Schildkröte",emoji:"🐢",ms:700},{label:"Hase",emoji:"🐰",ms:400},
+  {label:"Blitz",emoji:"⚡",ms:300},{label:"Rakete",emoji:"🚀",ms:200}];
+const ROUND=10, LISTEN_MS=8000;
+const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+const IS_SAFARI = /safari/i.test(navigator.userAgent)&&!/chrome|chromium|crios|edg|android/i.test(navigator.userAgent);
+
+const norm = s=>s.toLowerCase().replace(/[^a-zäöüß0-9]/g,"").trim();
+const NUM = {"0":"null","1":"eins","2":"zwei","3":"drei","4":"vier","5":"fünf","6":"sechs","7":"sieben","8":"acht","9":"neun","10":"zehn","11":"elf","12":"zwölf"};
+function lev(a,b){
+  const m=a.length,n=b.length;
+  if(Math.abs(m-n)>2)return 9;
+  const d=Array.from({length:m+1},(_,i)=>{const r=new Array(n+1).fill(0);r[0]=i;return r});
+  for(let j=1;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[m][n];
+}
+function tokEq(tok,t){
+  if(tok===t)return true;
+  if(HOMO[t]&&tok===HOMO[t])return true;
+  if(NUM[tok]&&NUM[tok]===t)return true;
+  const tol=t.length>=9?2:t.length>=5?1:0;   // kleine Erkennungsfehler tolerieren
+  return tol>0&&lev(tok,t)<=tol;
+}
+function matchWord(tr,target){
+  const t=norm(target);
+  if(!t)return false;
+  const toks=tr.toLowerCase().split(/\s+/).map(norm).filter(Boolean);
+  if(toks.some(tok=>tokEq(tok,t)))return true;
+  if(t.length>=6){
+    const joined=norm(tr);
+    if(joined.includes(t))return true;               // Ziel im zusammengezogenen Erkennungstext
+    if(lev(joined,t)<=(t.length>=9?2:1))return true; // getrennt erkannte Komposita ("Klasse Zimmer")
+  }
+  return false;
+}
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+const BW = {
+  cfg: Object.assign({mic:!!SR,level:1,custom:false,speed:1},LS.get("bw_cfg",{})),
+  customText: LS.get("bw_custom",""),
+  history: LS.get("bw_hist",[]),
+  micBlocked:false,
+  q:[],cur:null,total:0,firstTry:0,retried:new Set(),streak:0,best:0,
+  timer:null,listenTimer:null,rec:null,matched:false,heardFinal:"",
+
+  initUI(){
+    if(!SR){this.cfg.mic=false;$("bw-micnote").hidden=false;
+      $("bw-micnote").textContent="Dieser Browser kann keine Spracherkennung – Tipp-Modus ist aktiv.";}
+    $("bw-mode-mic").onclick=()=>{if(SR){this.cfg.mic=true;this.saveCfg()}};
+    $("bw-mode-tap").onclick=()=>{this.cfg.mic=false;this.saveCfg()};
+    const lv=$("bw-levels");lv.innerHTML="";
+    for(const k of Object.keys(LEVELS)){
+      const b=document.createElement("button");b.className="choice";
+      b.innerHTML=`<span style="font-size:22px">${LEVELS[k].emoji}</span>Level ${k}: ${LEVELS[k].name}`;
+      b.onclick=()=>{this.cfg.level=+k;this.cfg.custom=false;this.saveCfg()};
+      b.dataset.level=k;lv.appendChild(b);
+    }
+    $("bw-custombtn").onclick=()=>{this.cfg.custom=true;this.saveCfg()};
+    $("bw-customtext").value=this.customText;
+    $("bw-customtext").oninput=e=>{this.customText=e.target.value;LS.set("bw_custom",this.customText);this.refreshStart()};
+    const sp=$("bw-speeds");sp.innerHTML="";
+    SPEEDS.forEach((s,i)=>{
+      const b=document.createElement("button");b.className="choice";
+      b.innerHTML=`<span style="font-size:22px">${s.emoji}</span>${s.label}<span class="small">${(s.ms/1000).toFixed(1)} s</span>`;
+      b.onclick=()=>{this.cfg.speed=i;this.saveCfg()};b.dataset.speed=i;sp.appendChild(b);
+    });
+    $("bw-start").onclick=()=>this.startRound();
+    $("bw-abort").onclick=()=>this.abort();
+    $("bw-again").onclick=()=>this.startRound();
+    $("bw-back").onclick=()=>this.show("setup");
+    $("bw-clearhist").onclick=()=>{this.history=[];LS.set("bw_hist",[]);this.renderHistory()};
+    this.saveCfg();this.renderHistory();
+  },
+  saveCfg(){
+    LS.set("bw_cfg",this.cfg);
+    $("bw-mode-mic").classList.toggle("sel",this.cfg.mic&&!!SR);
+    $("bw-mode-tap").classList.toggle("sel",!this.cfg.mic||!SR);
+    document.querySelectorAll("#bw-levels .choice").forEach(b=>
+      b.classList.toggle("sel",!this.cfg.custom&&+b.dataset.level===this.cfg.level));
+    $("bw-custombtn").classList.toggle("sel",this.cfg.custom);
+    $("bw-customtext").hidden=!this.cfg.custom;
+    $("bw-homonote").hidden=!(this.cfg.level===3&&!this.cfg.custom&&this.cfg.mic);
+    document.querySelectorAll("#bw-speeds .choice").forEach(b=>
+      b.classList.toggle("sel",+b.dataset.speed===this.cfg.speed));
+    this.refreshStart();
+  },
+  customWords(){return this.customText.split(/[\n,;]+/).map(w=>w.trim()).filter(Boolean)},
+  refreshStart(){$("bw-start").disabled=this.cfg.custom&&this.customWords().length<3},
+  renderHistory(){
+    $("bw-historycard").hidden=this.history.length===0;
+    $("bw-history").innerHTML=this.history.slice(-8).map((h,i)=>
+      `<div class="between" style="font-size:15px;padding:3px 0"><span>${h.date||("Runde "+(i+1))}</span><span>${h.first} / ${h.total} sofort ${h.first===h.total?"🌟":""}</span></div>`).join("");
+  },
+  show(s){
+    $("bw-setup").hidden=s!=="setup";$("bw-play").hidden=s!=="play";$("bw-done").hidden=s!=="done";
+    if(s==="setup"){this.renderHistory()}
+  },
+  startRound(){
+    const pool=this.cfg.custom?this.customWords():LEVELS[this.cfg.level].words;
+    if(pool.length<3)return;
+    this.q=shuffle(pool).slice(0,Math.min(ROUND,pool.length));
+    this.total=this.q.length;this.firstTry=0;this.retried=new Set();this.streak=0;this.best=0;
+    this.micBlockedNotice();
+    this.show("play");this.renderPlay();this.phaseIdle();
+  },
+  micBlockedNotice(){
+    if(this.micBlocked){$("bw-micnote").hidden=false;
+      $("bw-micnote").textContent="Mikrofon-Zugriff wurde blockiert – die App läuft im Tipp-Modus weiter.";}
+  },
+  renderPlay(){
+    $("bw-left").textContent=`Noch ${this.q.length} ${this.q.length===1?"Wort":"Wörter"}`;
+    $("bw-streak").textContent="Serie: "+(this.streak?"⚡".repeat(Math.min(this.streak,8)):"–");
+    $("bw-bar").style.width=((this.total-this.q.length)/this.total*100)+"%";
+  },
+  clearTimers(){clearTimeout(this.timer);clearTimeout(this.listenTimer)},
+  stopRec(){
+    if(this.rec){try{this.rec.onresult=null;this.rec.onend=null;this.rec.onerror=null;this.rec.abort()}catch(e){}this.rec=null}
+    clearTimeout(this.listenTimer);
+  },
+  stage(html,cls){const st=$("bw-stage");st.className="stage"+(cls?" "+cls:"");st.innerHTML=html},
+  phaseIdle(){
+    this.cur=null;this.renderPlay();
+    if(this.useMic()){this.timer=setTimeout(()=>this.flash(),700);
+      this.stage('<div class="center" style="color:var(--dim)">gleich geht\'s weiter …</div>');}
+    else this.stage('<button class="btn" style="font-size:24px;padding:18px 34px" onclick="BW.flash()">⚡ Wort blitzen!</button>');
+  },
+  useMic(){return this.cfg.mic&&SR&&!this.micBlocked},
+  flash(){
+    if(!this.q.length)return;
+    this.cur=this.q[0];
+    let c=3;
+    const showC=()=>this.stage(`<div class="countnum">${c}</div>`);
+    showC();
+    const tick=()=>{c--;
+      if(c>0){showC();this.timer=setTimeout(tick,550)}
+      else{
+        this.stage(`<div class="bigword ${this.cur.length>10?"long":""}">${this.cur}</div>`,"flash");
+        this.timer=setTimeout(()=>{this.phaseGuess()},SPEEDS[this.cfg.speed].ms);
+      }};
+    this.timer=setTimeout(tick,550);
+  },
+  phaseGuess(){
+    if(this.useMic()){
+      this.stage(`<div class="center" style="padding:16px;width:100%">
+        <div class="micpulse">🎤</div>
+        <p style="font-size:18px;margin:10px 0 4px">Sag das Wort laut!</p>
+        <div id="bw-heard" style="min-height:22px;font-size:15px;color:var(--dim);font-style:italic">Ich höre zu …</div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn good" style="font-size:15px;padding:8px 16px;box-shadow:none" onclick="BW.manual(true)">✓ war richtig</button>
+          <button class="btn retry" style="font-size:15px;padding:8px 16px;box-shadow:none" onclick="BW.manual(false)">↻ nochmal</button>
+        </div></div>`);
+      this.listen(this.cur);
+    }else{
+      this.stage(`<div class="center" style="padding:16px">
+        <div style="font-size:40px;letter-spacing:8px;color:var(--dim)">✦ ✦ ✦</div>
+        <p style="font-size:18px;margin:12px 0 18px">Sag das Wort laut!</p>
+        <button class="btn sec" style="font-size:18px" onclick="BW.reveal()">👀 Wort zeigen</button></div>`);
+    }
+  },
+  listen(word){
+    this.stopRec();this.matched=false;this.heardFinal="";
+    this.listenUntil=Date.now()+LISTEN_MS;
+    this.startRec(word);
+    this.listenTimer=setTimeout(()=>{
+      if(!this.matched){this.stopRec();this.reveal()}
+    },LISTEN_MS);
+  },
+  startRec(word){
+    let rec;
+    try{rec=new SR()}catch(e){dlog("BW","new SR() FEHLER: "+e.message);this.micBlocked=true;this.stopRec();this.micBlockedNotice();this.phaseGuess();return}
+    rec.lang="de-DE";rec.interimResults=true;rec.maxAlternatives=5;
+    rec.continuous=!IS_SAFARI;
+    rec._t0=Date.now();rec._err="";
+    dlog("BW","Session-Start | Ziel: "+word+" | continuous="+rec.continuous);
+    rec.onaudiostart=()=>dlog("BW","audiostart (Mikro offen)");
+    rec.onsoundstart=()=>dlog("BW","soundstart (Ton erkannt)");
+    rec.onspeechstart=()=>dlog("BW","speechstart (Sprache erkannt)");
+    rec.onspeechend=()=>dlog("BW","speechend");
+    rec.onnomatch=()=>dlog("BW","nomatch");
+    rec.onresult=ev=>{
+      let all="";
+      for(let i=0;i<ev.results.length;i++){
+        for(let j=0;j<ev.results[i].length;j++)all+=" "+ev.results[i][j].transcript;
+        if(ev.results[i].isFinal)this.heardFinal+=" "+ev.results[i][0].transcript;
+      }
+      dlog("BW","result: „"+all.trim()+"“");
+      BW.fastFails=0;
+      const h=$("bw-heard");if(h)h.textContent="„"+all.trim().split(/\s+/).slice(-4).join(" ")+"“";
+      if(!this.matched&&(matchWord(all,word)||matchWord(this.heardFinal,word))){
+        this.matched=true;this.stopRec();this.autoResult(true,word)}
+    };
+    rec.onerror=ev=>{
+      dlog("BW","ERROR: "+(ev.error||"?")+(ev.message?" – "+ev.message:""));
+      rec._err=(ev.error||"")+" "+(ev.message||"");
+      if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){
+        this.micBlocked=true;this.stopRec();this.micBlockedNotice();this.phaseGuess();
+      }};
+    rec.onend=()=>{
+      dlog("BW","end | final bisher: „"+this.heardFinal.trim()+"“");
+      if(this.matched||this.rec!==rec)return;
+      this.rec=null;
+      if(matchWord(this.heardFinal,word)){
+        this.matched=true;clearTimeout(this.listenTimer);this.autoResult(true,word);return}
+      if(this.heardFinal.trim()){
+        clearTimeout(this.listenTimer);this.autoResult(false,word);return}
+      // Sofort-Abbruch (macOS blockiert Diktat-Dienst)? Nicht endlos haemmern:
+      if(Date.now()-rec._t0<1500&&rec._err){
+        this.fastFails=(this.fastFails||0)+1;
+        if(this.fastFails>=6){
+          dlog("BW","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
+          this.micBlocked=true;
+          $("bw-micnote").hidden=false;
+          $("bw-micnote").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Datei in Chrome öffnen.";
+          clearTimeout(this.listenTimer);
+          this.reveal();
+          return;
+        }
+      }
+      if(Date.now()<this.listenUntil-600)setTimeout(()=>{if(!this.matched&&!this.rec)this.startRec(word)},150);
+    };
+    this.rec=rec;
+    try{rec.start();dlog("BW","start() aufgerufen")}
+    catch(e){dlog("BW","start() FEHLER: "+e.message);this.micBlocked=true;this.micBlockedNotice();this.phaseGuess()}
+  },
+
+  autoResult(ok,word){
+    this.clearTimers();
+    if(ok){
+      this.stage(`<div class="center" style="animation:popIn .3s"><div style="font-size:52px">✅</div>
+        <div style="font-size:40px;font-weight:800;color:var(--good)">${word}</div>
+        <div style="font-size:17px;color:var(--dim)">Richtig!</div></div>`,"ok");
+      this.timer=setTimeout(()=>this.advance(true,word),1000);
+    }else{
+      const heard=this.heardFinal.trim().split(/\s+/).slice(-4).join(" ");
+      this.stage(`<div class="center" style="animation:popIn .3s;padding:12px">
+        <div style="font-size:40px;font-weight:800;color:var(--retry)">${word}</div>
+        ${heard?`<div style="font-size:15px;color:var(--dim);margin-top:4px">Ich habe „${heard}“ verstanden</div>`:""}
+        <div style="font-size:16px;margin-top:8px">Kommt gleich nochmal! ↻</div></div>`,"no");
+      this.timer=setTimeout(()=>this.advance(false,word),1800);
+    }
+  },
+  reveal(){
+    this.stopRec();this.clearTimers();
+    this.stage(`<div class="center" style="padding:16px;width:100%">
+      <div class="bigword ${this.cur.length>10?"long":""}" style="color:var(--bolt);margin-bottom:20px">${this.cur}</div>
+      <div class="row">
+        <button class="btn good" style="min-width:140px" onclick="BW.manual(true)">✓ Gewusst!</button>
+        <button class="btn retry" style="min-width:140px" onclick="BW.manual(false)">↻ Nochmal</button>
+      </div></div>`);
+  },
+  manual(ok){this.stopRec();this.clearTimers();this.advance(ok,this.cur)},
+  advance(ok,word){
+    const rest=this.q.slice(1);
+    if(ok){
+      if(!this.retried.has(word))this.firstTry++;
+      this.streak++;this.best=Math.max(this.best,this.streak);
+      this.q=rest;
+    }else{
+      this.streak=0;this.retried.add(word);
+      const p=Math.min(rest.length,3);
+      this.q=[...rest.slice(0,p),word,...rest.slice(p)];
+    }
+    if(this.q.length===0)this.finish();
+    else this.phaseIdle();
+  },
+  finish(){
+    const d=new Date();
+    this.history.push({date:d.toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"}),first:this.firstTry,total:this.total});
+    if(this.history.length>30)this.history=this.history.slice(-30);
+    LS.set("bw_hist",this.history);
+    const stars=this.firstTry===this.total?3:this.firstTry>=this.total*0.7?2:1;
+    $("bw-emoji").textContent=stars===3?"🏆":stars===2?"🎉":"💪";
+    $("bw-stars").textContent="⭐".repeat(stars)+"☆".repeat(3-stars);
+    $("bw-praise").textContent=stars===3?"Perfekte Runde!":stars===2?"Stark gemacht!":"Runde geschafft!";
+    $("bw-r1").textContent=`${this.firstTry} von ${this.total}`;
+    $("bw-r2").textContent=`${this.best} ⚡`;
+    $("bw-r3").textContent=`${SPEEDS[this.cfg.speed].emoji} ${SPEEDS[this.cfg.speed].label}`;
+    const tip=$("bw-tip");
+    if(stars===3&&this.cfg.speed<SPEEDS.length-1){
+      tip.hidden=false;
+      tip.textContent=`Tipp: Trau dich eine Stufe schneller – ${SPEEDS[this.cfg.speed+1].emoji} ${SPEEDS[this.cfg.speed+1].label}!`;
+    }else tip.hidden=true;
+    this.show("done");
+  },
+  abort(silent){
+    this.clearTimers();this.stopRec();
+    if(!silent)this.show("setup");
+  },
+};
+BW.initUI();
+
+/* ═════════ RSVP SPEED-READER ═════════ */
+const RSVP = {
+  words:[],pauses:[],idx:0,playing:false,timer:null,title:"",
+  cfg:Object.assign({wpm:300,size:46},LS.get("rs_cfg",{})),
+
+  init(){
+    $("rs-wpm").value=this.cfg.wpm;$("rs-size").value=this.cfg.size;
+    this.applyCfg();
+    $("rs-wpm").oninput=e=>{this.cfg.wpm=+e.target.value;this.applyCfg();this.saveCfg()};
+    $("rs-size").oninput=e=>{this.cfg.size=+e.target.value;this.applyCfg();this.saveCfg();this.renderWord()};
+    $("rs-loadfile").onclick=()=>$("rs-file").click();
+    $("rs-file").onchange=e=>{const f=e.target.files[0];if(f)this.loadFile(f);e.target.value=""};
+    $("rs-pastebtn").onclick=()=>{const t=$("rs-paste");t.hidden=!t.hidden;$("rs-usepaste").hidden=t.hidden;if(!t.hidden)t.focus()};
+    $("rs-usepaste").onclick=()=>{const txt=$("rs-paste").value.trim();
+      if(txt.split(/\s+/).length>=5)this.setText(txt,"Eingefügter Text");};
+    $("rs-stage").onclick=()=>this.toggle();
+    $("rs-playpause").onclick=()=>this.toggle();
+    $("rs-back10").onclick=()=>{this.jump(-10)};
+    $("rs-restart").onclick=()=>{this.pause();this.idx=0;this.renderWord();this.savePos()};
+    document.addEventListener("keydown",e=>{
+      if($("view-rsvp").hidden||e.target.tagName==="TEXTAREA")return;
+      if(e.code==="Space"){e.preventDefault();this.toggle()}
+      else if(e.key==="ArrowLeft")this.jump(-10);
+      else if(e.key==="ArrowRight")this.jump(10);
+      else if(e.key==="+"||e.key==="ArrowUp"){e.preventDefault();this.bumpWpm(25)}
+      else if(e.key==="-"||e.key==="ArrowDown"){e.preventDefault();this.bumpWpm(-25)}
+    });
+    // Gespeicherten Text wiederherstellen
+    const saved=LS.get("rs_text",null);
+    if(saved&&saved.text){this.setText(saved.text,saved.title||"Gespeicherter Text",LS.get("rs_pos",0),true)}
+  },
+  saveCfg(){LS.set("rs_cfg",this.cfg)},
+  applyCfg(){
+    $("rs-wpmout").textContent=this.cfg.wpm+" WpM";
+    $("rs-sizeout").textContent=this.cfg.size+" px";
+    document.documentElement.style.setProperty("--rsvpsize",this.cfg.size+"px");
+  },
+  bumpWpm(d){this.cfg.wpm=Math.max(100,Math.min(900,this.cfg.wpm+d));
+    $("rs-wpm").value=this.cfg.wpm;this.applyCfg();this.saveCfg()},
+
+  async loadFile(f){
+    $("rs-fileinfo").textContent="Lade „"+f.name+"“ …";
+    try{
+      let text,title=f.name.replace(/\.(txt|epub)$/i,"");
+      if(/\.epub$/i.test(f.name)){
+        const r=await this.parseEpub(f);text=r.text;if(r.title)title=r.title;
+      }else{
+        text=await f.text();
+      }
+      text=(text||"").trim();
+      if(text.split(/\s+/).length<5)throw new Error("Kein lesbarer Text gefunden.");
+      this.setText(text,title);
+    }catch(err){
+      $("rs-fileinfo").textContent="Fehler: "+err.message+
+        (navigator.onLine?"":" (Für EPUB wird beim ersten Mal Internet benötigt.)");
+    }
+  },
+  loadScript(src){return new Promise((res,rej)=>{
+    const s=document.createElement("script");s.src=src;s.onload=res;
+    s.onerror=()=>rej(new Error("EPUB-Bibliothek konnte nicht geladen werden."));
+    document.head.appendChild(s)})},
+  async parseEpub(f){
+    if(!window.JSZip)await this.loadScript("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    const zip=await JSZip.loadAsync(f);
+    const cont=zip.file("META-INF/container.xml");
+    if(!cont)throw new Error("Keine gültige EPUB-Datei.");
+    const cxml=await cont.async("string");
+    const m=cxml.match(/full-path="([^"]+)"/);
+    if(!m)throw new Error("EPUB-Struktur nicht erkannt.");
+    const opfPath=m[1];
+    const opf=await zip.file(opfPath).async("string");
+    const dir=opfPath.includes("/")?opfPath.slice(0,opfPath.lastIndexOf("/")+1):"";
+    const doc=new DOMParser().parseFromString(opf,"application/xml");
+    let title="";const tEl=doc.getElementsByTagName("dc:title")[0]||doc.querySelector("title");
+    if(tEl)title=tEl.textContent.trim();
+    const manifest={};
+    for(const it of doc.querySelectorAll("manifest > item"))
+      manifest[it.getAttribute("id")]={href:it.getAttribute("href"),type:it.getAttribute("media-type")||""};
+    const spine=[...doc.querySelectorAll("spine > itemref")]
+      .map(r=>manifest[r.getAttribute("idref")])
+      .filter(x=>x&&/html|xml/i.test(x.type));
+    let text="";
+    for(const it of spine){
+      const file=zip.file(decodeURIComponent(dir+it.href))||zip.file(dir+it.href);
+      if(!file)continue;
+      const html=await file.async("string");
+      const d=new DOMParser().parseFromString(html,"text/html");
+      d.querySelectorAll("script,style,nav").forEach(e=>e.remove());
+      d.querySelectorAll("p,div,h1,h2,h3,h4,h5,li,br,tr").forEach(e=>e.insertAdjacentText("beforebegin","\n\n"));
+      if(d.body)text+=d.body.textContent+"\n\n";
+    }
+    text=text.replace(/­/g,"").replace(/[ \t]+/g," ").replace(/ *\n */g,"\n").replace(/\n{3,}/g,"\n\n");
+    if(text.split(/\s+/).length<5)throw new Error("EPUB enthält keinen lesbaren Text (evtl. nur Bilder/DRM).");
+    return {text,title};
+  },
+
+  setText(text,title,startIdx,restored){
+    this.pause();
+    // Tokenisieren + Pausen-Markierung
+    this.words=[];this.pauses=[];
+    const paras=text.split(/\n{2,}/);
+    for(const p of paras){
+      const ws=p.split(/\s+/).filter(Boolean);
+      ws.forEach((w,i)=>{
+        this.words.push(w);
+        this.pauses.push(i===ws.length-1?2.5:0); // Absatzende
+      });
+    }
+    if(!this.words.length)return;
+    this.title=title;this.idx=Math.min(startIdx||0,this.words.length-1);
+    $("rs-title").textContent=title;
+    $("rs-reader").hidden=false;
+    $("rs-fileinfo").textContent=restored
+      ?`Zuletzt gelesener Text wiederhergestellt (${this.words.length.toLocaleString("de-AT")} Wörter).`
+      :`Geladen: ${this.words.length.toLocaleString("de-AT")} Wörter.`;
+    $("rs-paste").hidden=true;$("rs-usepaste").hidden=true;
+    // Text speichern, wenn nicht zu groß (~400k Zeichen)
+    if(text.length<400000){LS.set("rs_text",{text,title})}
+    else{LS.del("rs_text");$("rs-fileinfo").textContent+=" (Zu groß zum Speichern – Position merkt sich die App trotzdem, solange die Datei erneut geladen wird.)"}
+    this.savePos();this.renderWord();
+    $("rs-reader").scrollIntoView({behavior:"smooth",block:"start"});
+  },
+  savePos(){LS.set("rs_pos",this.idx)},
+
+  orpIndex(w){
+    const core=w.replace(/^[^A-Za-zÄÖÜäöüß0-9]+/,"");
+    const off=w.length-core.length;
+    const L=core.replace(/[^A-Za-zÄÖÜäöüß0-9]+$/,"").length||1;
+    let o; if(L<=1)o=0;else if(L<=5)o=1;else if(L<=9)o=2;else if(L<=13)o=3;else o=4;
+    return Math.min(off+o,w.length-1);
+  },
+  renderWord(){
+    const total=this.words.length;
+    if(!total)return;
+    const w=this.words[this.idx]||"";
+    const oi=this.orpIndex(w);
+    const el=$("rs-word");
+    el.querySelector(".pre").textContent=w.slice(0,oi);
+    el.querySelector(".orp").textContent=w[oi]||"";
+    el.querySelector(".post").textContent=w.slice(oi+1);
+    // ORP-Buchstaben mittig ausrichten
+    const stage=el.parentElement;
+    const cx=stage.clientWidth/2;
+    const preW=el.querySelector(".pre").offsetWidth;
+    const orpW=el.querySelector(".orp").offsetWidth;
+    el.style.transform=`translateX(${cx-preW-orpW/2}px)`;
+    $("rs-bar").style.width=((this.idx+1)/total*100)+"%";
+    const min=Math.round((total-this.idx)/this.cfg.wpm);
+    $("rs-pos").textContent=`${(this.idx+1).toLocaleString("de-AT")} / ${total.toLocaleString("de-AT")} · noch ~${min} min`;
+  },
+  delayFor(i){
+    let d=60000/this.cfg.wpm;
+    const w=this.words[i]||"";
+    if(w.length>8)d*=1.35;
+    if(/[.!?…]["»«"')\]]?$/.test(w))d*=2.2;
+    else if(/[,;:]["»«"')\]]?$/.test(w))d*=1.5;
+    if(this.pauses[i])d*=this.pauses[i];
+    return d;
+  },
+  step(){
+    if(!this.playing)return;
+    this.renderWord();
+    const d=this.delayFor(this.idx);
+    this.timer=setTimeout(()=>{
+      if(this.idx<this.words.length-1){this.idx++;if(this.idx%25===0)this.savePos();this.step()}
+      else{this.pause();this.savePos();$("rs-tap").textContent="Fertig! 🎉 Tippen für nochmal von hier."}
+    },d);
+  },
+  toggle(){this.playing?this.pause():this.play()},
+  play(){
+    if(!this.words.length)return;
+    this.playing=true;
+    $("rs-playpause").textContent="⏸ Pause";
+    $("rs-tap").textContent="Tippen zum Pausieren";
+    this.step();
+  },
+  pause(){
+    this.playing=false;clearTimeout(this.timer);
+    $("rs-playpause").textContent="▶ Start";
+    $("rs-tap").textContent="Tippen zum Starten · Leertaste = Start/Pause";
+    this.savePos();
+  },
+  jump(n){
+    if(!this.words.length)return;
+    const wasPlaying=this.playing;this.pause();
+    this.idx=Math.max(0,Math.min(this.words.length-1,this.idx+n));
+    this.renderWord();this.savePos();
+    if(wasPlaying)this.play();
+  },
+};
+RSVP.init();
+
+/* ═════════ LAUTLESEN ═════════ */
+const LR = {
+  cfg:Object.assign({mode:"self",quiz:true,rate:0.9,voice:""},LS.get("lr_cfg",{})),
+  paras:[],flat:[],paraEnd:[],mode:"self",
+  running:false,finished:true,rec:null,committed:[],
+  quizAsked:new Set(),quizRight:0,quizTotal:0,
+  t0:null,tInt:null,curPara:0,ttsPaused:false,pointer:0,lastStatus:null,
+
+  init(){
+    $("lr-text-in").value=LS.get("lr_text","");
+    $("lr-text-in").oninput=e=>LS.set("lr_text",e.target.value);
+    $("lr-quiz").checked=this.cfg.quiz;
+    $("lr-quiz").onchange=e=>{this.cfg.quiz=e.target.checked;this.save()};
+    $("lr-rate").value=this.cfg.rate;
+    $("lr-rateout").textContent=(+this.cfg.rate).toFixed(2)+"×";
+    $("lr-rate").oninput=e=>{this.cfg.rate=+e.target.value;
+      $("lr-rateout").textContent=this.cfg.rate.toFixed(2)+"×";this.save()};
+    $("lr-mode-self").onclick=()=>{this.cfg.mode="self";this.save();this.applyMode()};
+    $("lr-mode-tts").onclick=()=>{this.cfg.mode="tts";this.save();this.applyMode()};
+    $("lr-voice").onchange=e=>{this.cfg.voice=e.target.value;this.save()};
+    $("lr-test").onclick=()=>this.testVoice();
+    $("lr-rescan").onclick=()=>{
+      this._voiceSig="";
+      try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u);speechSynthesis.cancel()}catch(e){}
+      this.fillVoices();
+      setTimeout(()=>this.fillVoices(),600);
+      setTimeout(()=>this.fillVoices(),2000);
+      dlog("TTS","Manueller Neu-Scan ausgelöst".replace("\u00f6","ö"));
+    };
+    $("lr-start").onclick=()=>this.start();
+    $("lr-stopbtn").onclick=()=>this.finish(true);
+    $("lr-ttspause").onclick=()=>this.ttsToggle();
+    $("lr-again").onclick=()=>this.start();
+    $("lr-new").onclick=()=>this.show("setup");
+    if("speechSynthesis" in window){
+      speechSynthesis.onvoiceschanged=()=>this.fillVoices();
+      this.fillVoices();
+      // Safari liefert die volle Liste oft verspätet und feuert das Event nicht immer:
+      [400,1500,4000,8000].forEach(t=>setTimeout(()=>this.fillVoices(),t));
+    }
+    this.applyMode();
+  },
+  save(){LS.set("lr_cfg",this.cfg)},
+  applyMode(){
+    const tts=this.cfg.mode==="tts";
+    $("lr-mode-self").classList.toggle("sel",!tts);
+    $("lr-mode-tts").classList.toggle("sel",tts);
+    $("lr-raterow").hidden=!tts;
+    $("lr-voicerow").hidden=!tts;
+    $("lr-quizrow").hidden=!tts;
+    const n=$("lr-note");
+    if(!tts&&!SR)n.textContent="Dieser Browser kann keine Spracherkennung – bitte „Vorlesen lassen“ wählen.";
+    else if(!tts)n.textContent="Die Erkennung ist nicht perfekt – rote Wörter am Schluss einfach gemeinsam anschauen.";
+    else if(!("speechSynthesis" in window))n.textContent="Dieser Browser kann leider nicht vorlesen.";
+    else n.textContent="";
+  },
+  voiceScore(v){
+    const n=(v.name||"").toLowerCase();
+    let s=0;
+    if(/premium|enhanced|erweitert|natural|neural/.test(n))s+=50;
+    if(/siri/.test(n))s+=40;
+    if(/google/.test(n))s+=35;
+    if(/petra|anna|helena|markus|viktor|katja/.test(n))s+=20;
+    if(/microsoft/.test(n))s+=15;
+    if(/espeak|compact|eloquence|grandpa|grandma|zarvox|trinoids|albert/.test(n))s-=60;
+    if((v.lang||"").toLowerCase()==="de-at")s+=5;
+    return s;
+  },
+  fillVoices(){
+    const sel=$("lr-voice");
+    const vs=speechSynthesis.getVoices()
+      .filter(v=>v.lang&&v.lang.toLowerCase().startsWith("de"))
+      .sort((a,b)=>this.voiceScore(b)-this.voiceScore(a));
+    dlog("TTS","Deutsche Stimmen ("+vs.length+"): "+(vs.map(v=>v.name).join(", ")||"keine"));
+    if(!vs.length){sel.innerHTML="<option value=''>Standard-Stimme</option>";return}
+    const sig=vs.map(v=>v.voiceURI).join("|");
+    if(sig===this._voiceSig)return;
+    this._voiceSig=sig;
+    sel.innerHTML=vs.map(v=>`<option value="${v.voiceURI}">${v.name}${v.name.includes("(")?"":" ("+v.lang+")"}</option>`).join("");
+    if(this.cfg.voice&&vs.some(v=>v.voiceURI===this.cfg.voice))sel.value=this.cfg.voice;
+    else{sel.value=vs[0].voiceURI;this.cfg.voice=vs[0].voiceURI;this.save()}
+  },
+  testVoice(){
+    if(!("speechSynthesis" in window))return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance("Hallo! So klinge ich, wenn ich dir vorlese.");
+    u.lang="de-DE";u.rate=this.cfg.rate;
+    const v=speechSynthesis.getVoices().find(x=>x.voiceURI===this.cfg.voice);
+    if(v)u.voice=v;
+    speechSynthesis.speak(u);
+  },
+  show(s){["setup","run","done"].forEach(x=>$("lr-"+x).hidden=s!==x);
+    $("lr-quizbox").hidden=true;window.scrollTo({top:0,behavior:"smooth"})},
+
+  buildParas(text){
+    let blocks=text.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+    if(blocks.length<=1)blocks=text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    const paras=[];let cur=[];
+    for(const b of blocks){
+      cur=cur.concat(b.split(/\s+/).filter(Boolean));
+      if(cur.length>=35){paras.push(cur);cur=[]}
+    }
+    if(cur.length){
+      if(paras.length&&cur.length<15)paras[paras.length-1]=paras[paras.length-1].concat(cur);
+      else paras.push(cur);
+    }
+    return paras;
+  },
+  prepare(){
+    const text=$("lr-text-in").value.trim();
+    if(text.split(/\s+/).filter(Boolean).length<5)return false;
+    this.paras=this.buildParas(text);
+    this.flat=[];this.paraEnd=[];
+    this.paras.forEach((ws,pi)=>{
+      ws.forEach(w=>this.flat.push({raw:w,norm:norm(w),p:pi,el:null}));
+      this.paraEnd.push(this.flat.length);
+    });
+    const disp=$("lr-display");disp.innerHTML="";
+    let k=0;
+    this.paras.forEach(ws=>{
+      const pe=document.createElement("p");
+      ws.forEach((w,i)=>{
+        const s=document.createElement("span");s.className="w";s.textContent=w;
+        this.flat[k].el=s;k++;
+        pe.appendChild(s);
+        if(i<ws.length-1)pe.appendChild(document.createTextNode(" "));
+      });
+      disp.appendChild(pe);
+    });
+    return true;
+  },
+  start(){
+    this.stopAll();
+    if(!this.prepare()){
+      $("lr-note").textContent="Bitte zuerst einen Text (mindestens 5 Wörter) einfügen.";
+      this.show("setup");return;
+    }
+    this.mode=this.cfg.mode;this.finished=false;this.running=true;
+    this.committed=[];this.quizAsked=new Set();this.quizRight=0;this.quizTotal=0;
+    this.curPara=0;this.pointer=0;this.lastStatus=null;this.t0=null;this.ttsPaused=false;
+    this.paused=false;this.everRes=0;this.sessCount=0;this.compat=IS_SAFARI;
+    $("lr-timer").textContent="0:00";
+    $("lr-quizbox").hidden=true;
+    this.show("run");
+    if(this.mode==="self"){
+      if(!SR){this.running=false;this.show("setup");this.applyMode();return}
+      $("lr-ttspause").hidden=true;
+      $("lr-status").textContent="🎤 Lies laut – ich höre zu!";
+      this.startRec();
+    }else{
+      if(!("speechSynthesis" in window)){this.running=false;this.show("setup");this.applyMode();return}
+      $("lr-ttspause").hidden=false;$("lr-ttspause").textContent="⏸ Pause";
+      $("lr-status").textContent="🔊 Hör zu und lies leise mit";
+      this.speakPara(0);
+    }
+  },
+  startTimer(){
+    if(this.t0)return;
+    this.t0=Date.now();
+    this.tInt=setInterval(()=>{
+      const s=Math.floor((Date.now()-this.t0)/1000);
+      $("lr-timer").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+    },500);
+  },
+
+  /* ── Selber lesen (Mikro) ── */
+  startRec(){
+    if(!this.running||this.paused)return;
+    let rec;
+    try{rec=new SR()}catch(e){$("lr-status").textContent="Mikrofon nicht verfügbar.";return}
+    rec.lang="de-DE";
+    rec.continuous=!this.compat;      // Safari: kurze Sessions (enden bei jeder Sprechpause)
+    rec.interimResults=true;
+    rec.maxAlternatives=3;
+    rec._final="";rec._gotResult=false;rec._t0=Date.now();rec._err="";
+    this.sessCount++;
+    dlog("LR","Session "+this.sessCount+" | continuous="+rec.continuous+" | interim="+rec.interimResults);
+    rec.onaudiostart=()=>dlog("LR","audiostart");
+    rec.onsoundstart=()=>dlog("LR","soundstart (Ton erkannt)");
+    rec.onspeechstart=()=>dlog("LR","speechstart (Sprache erkannt)");
+    rec.onspeechend=()=>dlog("LR","speechend");
+    rec.onstart=()=>{if(this.running&&!this.paused)$("lr-status").textContent="🎤 Ich höre zu – lies laut!"};
+    rec.onresult=ev=>{
+      rec._gotResult=true;this.everRes++;
+      dlog("LR","result #"+this.everRes);
+      this.fastFails=0;
+      let all="",fin="";
+      for(let i=0;i<ev.results.length;i++){
+        all+=" "+ev.results[i][0].transcript;
+        if(ev.results[i].isFinal)fin+=" "+ev.results[i][0].transcript;
+      }
+      rec._final=fin;
+      const hd=$("lr-heard");
+      if(hd&&all.trim())hd.textContent="Gehört: „"+all.trim().split(/\s+/).slice(-6).join(" ")+"“";
+      const toks=this.committed.concat(all.toLowerCase().split(/\s+/).map(norm).filter(Boolean));
+      this.align(toks);
+    };
+    rec.onerror=ev=>{
+      const err=ev.error||"unbekannt";
+      dlog("LR","ERROR: "+err+(ev.message?" – "+ev.message:""));
+      rec._err=err+" "+(ev.message||"");
+      if(err==="not-allowed"||err==="service-not-allowed"){
+        this.running=false;
+        $("lr-status").textContent="⚠️ Mikrofon-Zugriff blockiert (Schloss-Symbol in der Adressleiste prüfen).";
+      }else if(err==="network"){
+        $("lr-status").textContent="⚠️ Spracherkennung braucht Internet.";
+      }else if(err!=="no-speech"&&err!=="aborted"){
+        $("lr-status").textContent="⚠️ Erkennungsfehler: "+err;
+      }
+    };
+    rec.onend=()=>{
+      clearInterval(rec._flush);
+      dlog("LR","end | final: „"+rec._final.trim()+"“");
+      if(this.rec!==rec)return;
+      this.rec=null;
+      const fin=rec._final.toLowerCase().split(/\s+/).map(norm).filter(Boolean);
+      if(fin.length){
+        this.committed=this.committed.concat(fin);
+        const hd=$("lr-heard");
+        if(hd)hd.textContent="Gehört: „"+rec._final.trim().split(/\s+/).slice(-6).join(" ")+"“";
+        this.align(this.committed);   // Safari liefert erst am Session-Ende -> jetzt einfaerben
+      }
+      if(!this.everRes&&this.sessCount>=2&&!this.compat)this.compat=true;
+      if(!fin.length&&Date.now()-rec._t0<1500&&rec._err){
+        this.fastFails=(this.fastFails||0)+1;
+        if(this.fastFails>=6){
+          dlog("LR","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
+          this.running=false;
+          $("lr-status").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Datei in Chrome öffnen.";
+          return;
+        }
+      }
+      if(!this.everRes&&this.sessCount>=5&&!rec._err)
+        $("lr-status").textContent="⚠️ Ich verstehe nichts – richtiges Mikrofon gewählt? (Safari → Einstellungen für diese Website → Mikrofon)";
+      if(this.running&&!this.finished&&!this.paused)
+        setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec)this.startRec()},250);
+    };
+    // Safari-Flush: 3,5s ohne Ergebnis -> Session sauber stoppen (stop() zwingt
+    // WebKit zur Auslieferung des Puffers), onend startet danach automatisch neu
+    if(!this.compat){
+      rec._flush=setInterval(()=>{
+        if(this.rec!==rec){clearInterval(rec._flush);return}
+        if(!rec._gotResult&&Date.now()-rec._t0>3500){
+          clearInterval(rec._flush);
+          try{rec.stop()}catch(e){}
+        }
+      },600);
+    }
+    this.rec=rec;
+    try{rec.start()}
+    catch(e){$("lr-status").textContent="⚠️ Mikro-Start fehlgeschlagen: "+e.message;
+      setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec)this.startRec()},600)}
+  },
+  stopRec(){
+    if(this.rec){const r=this.rec;this.rec=null;
+      clearInterval(r._flush);
+      try{r.onresult=null;r.onend=null;r.onerror=null;r.abort()}catch(e){}}
+  },
+  align(toks){
+    const F=this.flat;let i=0;
+    const st=new Array(F.length).fill(0);
+    for(const t of toks){
+      if(i>=F.length)break;
+      let f=-1;
+      for(let j=i;j<Math.min(i+5,F.length);j++){
+        if(tokEq(t,F[j].norm)){f=j;break}
+      }
+      if(f>=0){for(let j=i;j<f;j++)st[j]=2;st[f]=1;i=f+1}
+    }
+    if(st.some(x=>x===1))this.startTimer();
+    F.forEach((w,j)=>{
+      w.el.className="w"+(st[j]===1?" ok":st[j]===2?" bad":"")+(j===i?" cur":"");
+    });
+    this.lastStatus=st;this.pointer=i;
+    if(F[i])F[i].el.scrollIntoView({block:"center",behavior:"smooth"});
+    if(i>=F.length)this.finish(false);   // beim Selberlesen keine Fragen
+  },
+
+  /* ── Vorlesen (TTS) ── */
+  speakPara(q){
+    if(!this.running)return;
+    if(q>=this.paras.length){this.finish(false);return}
+    this.curPara=q;this.startTimer();
+    const startIdx=q===0?0:this.paraEnd[q-1];
+    const words=this.paras[q];
+    let text="";const offs=[];
+    words.forEach((w,i)=>{offs.push(text.length);text+=w+(i<words.length-1?" ":"")});
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="de-DE";u.rate=this.cfg.rate;
+    const v=speechSynthesis.getVoices().find(x=>x.voiceURI===this.cfg.voice);
+    if(v)u.voice=v;
+    u.onboundary=e=>{
+      if(e.name&&e.name!=="word")return;
+      let wi=0;
+      for(let i=0;i<offs.length;i++){if(e.charIndex>=offs[i])wi=i;else break}
+      this.flat.forEach((w,j)=>w.el.classList.toggle("cur",j===startIdx+wi));
+      const el=this.flat[startIdx+wi];
+      if(el)el.el.scrollIntoView({block:"center",behavior:"smooth"});
+    };
+    u.onend=()=>{
+      if(!this.running)return;
+      for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
+      if(this.cfg.quiz&&!this.quizAsked.has(q)){
+        this.quizAsked.add(q);
+        $("lr-status").textContent="🧠 Kleine Frage!";
+        this.askQuiz(q,()=>{
+          $("lr-status").textContent="🔊 Weiter geht's";
+          this.speakPara(q+1);
+        });
+      }else this.speakPara(q+1);
+    };
+    speechSynthesis.speak(u);
+  },
+  ttsToggle(){
+    if(this.ttsPaused){speechSynthesis.resume();this.ttsPaused=false;$("lr-ttspause").textContent="⏸ Pause"}
+    else{speechSynthesis.pause();this.ttsPaused=true;$("lr-ttspause").textContent="▶ Weiter"}
+  },
+
+  /* ── Quiz: Lückentext-Frage pro Absatz ── */
+  askQuiz(q,cb){
+    const box=$("lr-quizbox");box.hidden=false;
+    const wordsRaw=this.paras[q];
+    const clean=w=>w.replace(/[^A-Za-zÄÖÜäöüß]/g,"");
+    const cands=wordsRaw.map(clean).filter((w,i)=>w.length>=5&&i>0);
+    let target=cands.length?cands[Math.floor(Math.random()*cands.length)]:clean(wordsRaw[wordsRaw.length-1])||wordsRaw[0];
+    const pool=[...new Set(this.flat.map(w=>clean(w.raw))
+      .filter(w=>w.length>=4&&norm(w)!==norm(target)))];
+    const FB=["Fenster","Garten","Wasser","Schule","Wiese","Turm"];
+    let fb=0;while(pool.length<2&&fb<FB.length){if(norm(FB[fb])!==norm(target))pool.push(FB[fb]);fb++}
+    const opts=shuffle([target,...shuffle(pool).slice(0,2)]);
+    let blanked=false;
+    const paraText=wordsRaw.map(w=>{
+      if(!blanked&&clean(w).toLowerCase()===target.toLowerCase()){blanked=true;return "_____"}
+      return w;
+    }).join(" ");
+    $("lr-q").innerHTML="Welches Wort fehlt?<br><span style='color:var(--dim);font-size:16px'>„"+paraText+"“</span>";
+    $("lr-qfeed").textContent="";
+    this.quizTotal++;
+    let first=true;
+    const od=$("lr-opts");od.innerHTML="";
+    opts.forEach(o=>{
+      const b=document.createElement("button");b.className="qopt";b.textContent=o;
+      b.onclick=()=>{
+        if(norm(o)===norm(target)){
+          b.classList.add("right");
+          $("lr-qfeed").textContent="Richtig! 🎉";
+          if(first)this.quizRight++;
+          setTimeout(()=>{box.hidden=true;cb()},900);
+        }else{
+          b.classList.add("wrong");first=false;
+          $("lr-qfeed").textContent="Probier's nochmal!";
+        }
+      };
+      od.appendChild(b);
+    });
+    box.scrollIntoView({block:"center",behavior:"smooth"});
+  },
+
+  finish(manual){
+    if(this.finished&&!this.running)return;
+    this.finished=true;this.running=false;
+    this.stopRec();
+    if("speechSynthesis" in window)speechSynthesis.cancel();
+    clearInterval(this.tInt);this.tInt=null;
+    const st=this.lastStatus||[];
+    const ok=st.filter(x=>x===1).length;
+    const bad=[...new Set(this.flat.filter((w,j)=>st[j]===2).map(w=>w.raw))];
+    const secs=this.t0?Math.round((Date.now()-this.t0)/1000):0;
+    $("lr-head").textContent=manual?"Beendet":"Geschafft!";
+    let html=`<div class="statline"><span>Zeit</span><b>${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")} min</b></div>`;
+    if(this.mode==="self"){
+      html+=`<div class="statline"><span>Richtig gelesen</span><b>${ok} von ${this.flat.length} Wörtern</b></div>`;
+      if(secs>=10)html+=`<div class="statline"><span>Tempo</span><b>${Math.round(ok/(secs/60))} Wörter/min</b></div>`;
+    }
+    if(this.quizTotal)html+=`<div class="statline"><span>Fragen</span><b>${this.quizRight} von ${this.quizTotal} sofort richtig</b></div>`;
+    $("lr-stats").innerHTML=html;
+    const rw=$("lr-redwords");
+    if(this.mode==="self"&&bad.length){
+      rw.hidden=false;
+      rw.innerHTML=`<div class="cardtitle">Diese Wörter nochmal üben</div>
+        <div style="font-size:18px;line-height:1.8;color:var(--retry)">${bad.join(" · ")}</div>
+        <div class="hint">Tipp: Genau diese Wörter bei ⚡ Blitz als „Eigene Wörter“ eintragen!</div>`;
+    }else rw.hidden=true;
+    this.show("done");
+  },
+  stopAll(){
+    this.running=false;this.finished=true;
+    this.stopRec();
+    if("speechSynthesis" in window)speechSynthesis.cancel();
+    clearInterval(this.tInt);this.tInt=null;
+  },
+};
+LR.init();
+
+dlog("SYS","App geladen | "+navigator.userAgent);
+dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | Protokoll: "+location.protocol);
+
+/* letzten Tab wiederherstellen */
+showTab(LS.get("tab","blitz"));
+window.addEventListener("resize",()=>{if(!$("view-rsvp").hidden)RSVP.renderWord()});
+</script>
+</body>
+</html>
