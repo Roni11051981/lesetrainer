@@ -2,131 +2,239 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>⚡ Blitz &amp; Lese-Trainer</title>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@600&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F4F8FA">
+<meta name="color-scheme" content="light dark">
+<title>Lese-Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* ───────── Designsystem: hell, frisch, sportlich ───────── */
   :root{
-    --night:#141B33; --card:#1E2747; --card2:#2A3560; --bolt:#FFD338;
-    --ink:#F4F1E4; --dim:#8B93B5; --good:#5FD08A; --retry:#FF8A5C;
+    --bg:#F4F8FA; --surface:#FFFFFF; --surface2:#EAF3F5; --line:#D7E4E8;
+    --ink:#15303A; --muted:#5B7480;
+    --accent:#0F8B97; --accent-strong:#0B6F79; --accent-soft:#D9F1F3; --on-accent:#FFFFFF;
+    --sun:#F7C948; --sun-soft:#FFF2C2; --sun-ink:#6B4E00;
+    --good:#2EA86A; --good-soft:#DDF5E7; --warn:#E5704A; --warn-soft:#FDE6DE;
+    --orp:#E5484D;
+    --radius:18px; --radius-sm:12px;
+    --shadow:0 2px 10px rgba(21,48,58,.08); --shadow-lg:0 10px 30px rgba(21,48,58,.12);
+    --ui:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --read:'Lexend','Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0F1C21; --surface:#16272E; --surface2:#1E323A; --line:#2A4249;
+      --ink:#E8F1F4; --muted:#93ABB4;
+      --accent:#2BB5C1; --accent-strong:#5CCFD8; --accent-soft:#17414A; --on-accent:#06262B;
+      --sun:#F7C948; --sun-soft:#4A3B0E; --sun-ink:#FFE9A3;
+      --good:#43C684; --good-soft:#16402B; --warn:#F0875F; --warn-soft:#4A2A1E;
+      --shadow:0 2px 10px rgba(0,0,0,.35); --shadow-lg:0 10px 30px rgba(0,0,0,.45);
+    }
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--night);color:var(--ink);
-    font-family:'Baloo 2','Comic Sans MS',sans-serif;min-height:100vh;
-    -webkit-tap-highlight-color:transparent}
-  h1{font-family:'Fredoka',sans-serif;color:var(--bolt);font-size:26px;margin:0;letter-spacing:1px}
-  .wrap{max-width:520px;margin:0 auto;padding:16px 14px 40px}
-  .topbar{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:6px}
-  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 18px}
-  .tab{background:var(--card2);color:var(--ink);border:none;border-radius:14px;
-    padding:12px 6px;font:700 15px 'Baloo 2';cursor:pointer}
-  .tab.active{background:var(--bolt);color:var(--night)}
-  .card{background:var(--card);border-radius:20px;padding:16px;margin-bottom:16px}
-  .cardtitle{font-weight:800;color:var(--bolt);margin-bottom:10px}
-  .btn{background:var(--bolt);color:var(--night);border:none;border-radius:16px;
-    padding:14px 22px;font:700 18px 'Baloo 2';cursor:pointer;
-    box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .08s}
-  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
-  .btn.sec{background:var(--card2);color:var(--ink)}
-  .btn.good{background:var(--good)} .btn.retry{background:var(--retry)}
-  .btn.ghost{background:transparent;color:var(--dim);box-shadow:none;font-size:15px}
-  .btn:disabled{opacity:.4;cursor:default}
-  .choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-    background:var(--card2);color:var(--ink);border:none;border-radius:14px;
-    padding:12px 14px;font:700 16px 'Baloo 2';cursor:pointer;margin-bottom:8px}
-  .choice.sel{background:var(--bolt);color:var(--night)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .grid2 .choice{flex-direction:column;text-align:center;margin:0;gap:2px}
-  .small{font-size:12px;opacity:.7;font-weight:500}
-  .hint{font-size:13px;color:var(--dim);margin-top:8px}
-  .warn{font-size:13px;color:var(--retry);margin-top:8px}
-  textarea,input[type=range]{width:100%}
-  textarea{border-radius:12px;border:2px solid var(--bolt);background:var(--night);
-    color:var(--ink);padding:10px;font:500 16px 'Baloo 2';resize:vertical}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.45;
+    min-height:100vh;-webkit-tap-highlight-color:transparent;font-feature-settings:"kern"}
+  button{font-family:inherit;color:inherit}
+  button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{
+    outline:3px solid var(--accent);outline-offset:2px}
+  [hidden]{display:none!important}
+
+  .wrap{max-width:560px;margin:0 auto;padding:12px 16px calc(40px + env(safe-area-inset-bottom))}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px 10px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{width:38px;height:38px;border-radius:12px;background:var(--accent);color:var(--on-accent);
+    display:grid;place-items:center;font-weight:800;font-size:19px;box-shadow:var(--shadow)}
+  h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.2px}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .pill b{color:var(--ink)}
+  .pill.sun{background:var(--sun-soft);border-color:transparent;color:var(--sun-ink)}
+
+  /* Tabs als Segmentleiste */
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface2);
+    border-radius:999px;padding:4px;margin:4px 0 18px}
+  .tab{background:transparent;border:none;border-radius:999px;min-height:46px;padding:8px 6px;
+    font:700 15px var(--ui);color:var(--muted);cursor:pointer;transition:background .25s var(--ease),color .25s,box-shadow .25s}
+  .tab.active{background:var(--surface);color:var(--accent-strong);box-shadow:var(--shadow)}
+  .tab:active{transform:scale(.98)}
+
+  .card{background:var(--surface);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);
+    animation:rise .35s var(--ease) both}
+  .cardtitle{font-weight:800;font-size:15px;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .lead{color:var(--muted);margin:0 0 14px;text-align:center}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:var(--on-accent);
+    border:none;border-radius:16px;min-height:52px;padding:12px 22px;font:800 17px var(--ui);cursor:pointer;
+    box-shadow:0 3px 0 var(--accent-strong);transition:transform .12s var(--ease),box-shadow .12s,opacity .2s,background .2s}
+  .btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent-strong)}
+  .btn.sec{background:var(--surface2);color:var(--ink);box-shadow:0 3px 0 var(--line)}
+  .btn.sec:active{box-shadow:0 1px 0 var(--line)}
+  .btn.good{background:var(--good);color:#fff;box-shadow:0 3px 0 #22804F}
+  .btn.retry{background:var(--warn);color:#fff;box-shadow:0 3px 0 #B9502E}
+  .btn.sun{background:var(--sun);color:#3B2A00;box-shadow:0 3px 0 #D4A829}
+  .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;font-weight:700;font-size:15px}
+  .btn.ghost:active{transform:none}
+  .btn.big{font-size:20px;min-height:60px}
+  .btn:disabled{opacity:.45;cursor:default;transform:none}
   .full{width:100%}
   .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-  .between{display:flex;justify-content:space-between;align-items:center}
-  .progressbar{height:10px;background:var(--card);border-radius:6px;overflow:hidden;margin:8px 0 14px}
-  .progressbar>div{height:100%;background:var(--bolt);border-radius:6px;transition:width .3s;width:0%}
-  .stage{background:var(--card);border-radius:24px;min-height:240px;display:flex;
-    align-items:center;justify-content:center;position:relative;overflow:hidden;
-    border:3px solid transparent;transition:border-color .2s}
-  .stage.flash{border-color:var(--bolt)} .stage.ok{border-color:var(--good)} .stage.no{border-color:var(--retry)}
-  .bigword{font-size:52px;font-weight:800;letter-spacing:1px;text-align:center;
-    padding:0 12px;word-break:break-word;animation:boltIn .15s}
-  .bigword.long{font-size:36px}
-  .countnum{font:800 80px 'Fredoka';color:var(--bolt);animation:popIn .3s}
-  .statline{display:flex;justify-content:space-between;padding:4px 0;font-size:17px}
-  .statline span:first-child{color:var(--dim)}
+  .between{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .center{text-align:center}
+
+  /* Auswahlkacheln */
+  .choice{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);color:var(--ink);
+    border:2px solid var(--line);border-radius:14px;min-height:56px;padding:10px 14px;font:700 16px var(--ui);
+    cursor:pointer;margin-bottom:8px;transition:border-color .2s,background .2s,transform .12s var(--ease)}
+  .choice:active{transform:scale(.985)}
+  .choice.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .choice .ico{font-size:22px;width:30px;text-align:center;flex:none}
+  .choice .small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid2 .choice{flex-direction:column;text-align:center;margin:0;gap:4px;padding:14px 8px;justify-content:center}
+  .grid2 .choice .ico{width:auto}
+  .grid2 .btn{font-size:15px;padding:12px 10px}
+  .small{font-size:13px;color:var(--muted);font-weight:600}
+  .hint{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .warn{font-size:14px;color:var(--warn);margin-top:8px;font-weight:700}
+  .notice{background:var(--warn-soft);color:var(--ink);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;margin-top:10px;line-height:1.45}
+  .notice.ok{background:var(--good-soft)}
+  .notice.info{background:var(--accent-soft)}
+
+  textarea{width:100%;border-radius:var(--radius-sm);border:2px solid var(--line);background:var(--bg);color:var(--ink);
+    padding:12px;font:500 17px/1.5 var(--read);resize:vertical;transition:border-color .2s}
+  textarea:focus{border-color:var(--accent);outline:none}
+  select{width:100%;min-height:48px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);
+    border:2px solid var(--line);font:600 15px var(--ui)}
+  input[type=range]{width:100%;accent-color:var(--accent);height:40px;margin:0}
+  .slider-row{display:grid;grid-template-columns:90px 1fr 86px;align-items:center;gap:10px;margin:4px 0}
+  .slider-row label{font-size:15px;color:var(--muted);font-weight:700}
+  .slider-row output{text-align:right;font-weight:800;font-size:15px;white-space:nowrap;color:var(--accent-strong);font-variant-numeric:tabular-nums}
+  .check{display:flex;align-items:center;gap:12px;min-height:48px;font-size:16px;font-weight:700;cursor:pointer}
+  .check input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+
+  .progressbar{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;margin:8px 0 14px}
+  .progressbar>div{height:100%;background:var(--accent);border-radius:6px;transition:width .35s var(--ease);width:0%}
+  .meta{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-weight:700}
+
+  /* Bühne für Blitzwörter */
+  .stage{background:var(--surface);border-radius:24px;min-height:260px;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;border:3px solid var(--line);box-shadow:var(--shadow);transition:border-color .25s,background .25s}
+  .stage.flash{border-color:var(--accent)} .stage.ok{border-color:var(--good);background:var(--good-soft)} .stage.no{border-color:var(--warn);background:var(--warn-soft)}
+  .bigword{font:600 56px/1.1 var(--read);letter-spacing:.5px;text-align:center;padding:0 12px;word-break:break-word;animation:boltIn .18s var(--ease)}
+  .bigword.long{font-size:38px}
+  .countnum{font:800 84px/1 var(--ui);color:var(--accent);animation:popIn .3s var(--ease)}
+  .statline{display:flex;justify-content:space-between;padding:8px 0;font-size:17px;border-bottom:1px solid var(--line)}
+  .statline:last-child{border-bottom:none}
+  .statline span:first-child{color:var(--muted);font-weight:700}
   .micpulse{font-size:44px;animation:pulse 1.2s infinite;display:inline-block}
-  @keyframes boltIn{0%{opacity:0;transform:scale(1.35)}18%{opacity:1;transform:scale(1)}100%{opacity:1}}
+  .dots{font-size:30px;letter-spacing:10px;color:var(--line)}
+
+  /* Ergebnis-Ring */
+  .ring{position:relative;width:132px;height:132px;margin:6px auto 4px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring circle{fill:none;stroke-width:11;stroke-linecap:round}
+  .ring .track{stroke:var(--surface2)}
+  .ring .val{stroke:var(--accent);transition:stroke-dashoffset 1s var(--ease)}
+  .ring .val.gold{stroke:var(--sun)}
+  .ring .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-weight:800;font-size:26px;line-height:1}
+  .ring .lbl small{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:4px}
+  .praise{font-size:24px;font-weight:800;margin:8px 0 4px;color:var(--accent-strong)}
+  .praise-sub{color:var(--muted);margin:0 0 14px}
+  .stars{font-size:30px;letter-spacing:6px;margin:4px 0;color:var(--sun)}
+
+  @keyframes boltIn{0%{opacity:0;transform:scale(1.3)}20%{opacity:1;transform:scale(1)}100%{opacity:1}}
   @keyframes popIn{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
-  @keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
-  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.15)}}
-  .wig{display:inline-block;animation:wiggle 2.4s infinite;font-size:26px}
+  @keyframes rise{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.12)}}
+  @keyframes confetti{0%{transform:translateY(-10px) rotate(0);opacity:1}100%{transform:translateY(90px) rotate(260deg);opacity:0}}
+  .pop{animation:popIn .4s var(--ease)}
+  .confetti{position:relative;height:0;overflow:visible;pointer-events:none}
+  .confetti i{position:absolute;top:0;width:8px;height:12px;border-radius:2px;animation:confetti 1.1s var(--ease) forwards}
+
   /* ── RSVP ── */
-  .rsvp-stage{background:var(--card);border-radius:24px;padding:26px 8px;position:relative;
-    user-select:none;cursor:pointer}
-  .rsvp-guides{position:relative;height:110px;display:flex;align-items:center;overflow:hidden}
-  .rsvp-guides::before,.rsvp-guides::after{content:"";position:absolute;left:42%;width:2px;height:16px;
-    background:var(--dim);transform:translateX(-50%)}
+  .rsvp-stage{background:var(--surface);border-radius:24px;padding:26px 8px 14px;position:relative;user-select:none;cursor:pointer;
+    box-shadow:var(--shadow);border:3px solid var(--line)}
+  .rsvp-guides{position:relative;height:120px;display:flex;align-items:center;overflow:hidden}
+  .rsvp-guides::before,.rsvp-guides::after{content:"";position:absolute;left:42%;width:2px;height:16px;background:var(--line);transform:translateX(-50%)}
   .rsvp-guides::before{top:0} .rsvp-guides::after{bottom:0}
-  .rsvp-word{position:absolute;white-space:nowrap;font-weight:700;
-    font-size:var(--rsvpsize,46px);font-family:Georgia,'Times New Roman',serif;will-change:transform}
-  .rsvp-word .orp{color:#FF5A5A}
-  .rsvp-hintline{text-align:center;color:var(--dim);font-size:13px;margin-top:6px}
-  .slider-row{display:flex;align-items:center;gap:12px;margin:6px 0}
-  .slider-row label{min-width:88px;font-size:15px;color:var(--dim)}
-  .slider-row output{min-width:74px;text-align:right;font-weight:800;color:var(--bolt)}
-  input[type=range]{accent-color:var(--bolt);height:32px}
+  .rsvp-word{position:absolute;white-space:nowrap;font-weight:500;font-size:var(--rsvpsize,46px);font-family:var(--read);will-change:transform}
+  .rsvp-word .orp{color:var(--orp);font-weight:600}
+  .rsvp-hintline{text-align:center;color:var(--muted);font-size:13px;font-weight:700;margin-top:8px}
   .filebtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .filebtns .btn{flex-direction:column;gap:2px;line-height:1.2;padding:10px 8px}
+  .filebtns .small{color:inherit;opacity:.75}
   .srconly{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-  .badge{display:inline-block;background:var(--card2);border-radius:10px;padding:3px 10px;
-    font-size:13px;color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .lr-text p{margin:0 0 14px}
-  .lr-text .w{padding:1px 2px;border-radius:4px}
+  .badge{display:inline-block;background:var(--surface2);border-radius:10px;padding:4px 10px;font-size:13px;font-weight:700;color:var(--muted);
+    max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ── Lesen ── */
+  .lr-text{font:500 var(--lrsize,24px)/1.75 var(--read);max-height:50vh;overflow-y:auto;scroll-behavior:smooth;padding:20px 20px}
+  .lr-text p{margin:0 0 18px}
+  .lr-text .w{padding:2px 1px;border-radius:6px;transition:background .18s,color .18s}
   .lr-text .w.ok{color:var(--good)}
-  .lr-text .w.bad{color:var(--retry);text-decoration:underline wavy}
-  .lr-text .w.cur{background:rgba(255,211,56,.28)}
-  .qopt{display:block;width:100%;text-align:left;background:var(--card2);color:var(--ink);
-    border:none;border-radius:12px;padding:12px 14px;font:700 16px 'Baloo 2';
-    cursor:pointer;margin-bottom:8px}
-  .qopt.right{background:var(--good);color:var(--night)}
-  .qopt.wrong{background:var(--retry);color:var(--night)}
-  select{width:100%;padding:10px;border-radius:12px;background:var(--night);
-    color:var(--ink);border:2px solid var(--card2);font:500 15px 'Baloo 2'}
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-  @media (max-width:400px){.bigword{font-size:44px}.bigword.long{font-size:30px}}
+  .lr-text .w.bad{color:var(--warn);text-decoration:underline wavy;text-decoration-thickness:1.5px}
+  .lr-text .w.cur{background:var(--sun-soft);color:var(--ink);box-shadow:0 0 0 2px var(--sun-soft)}
+  .qopt{display:block;width:100%;text-align:left;background:var(--surface2);color:var(--ink);border:2px solid transparent;border-radius:14px;
+    min-height:54px;padding:12px 16px;font:700 17px var(--read);cursor:pointer;margin-bottom:8px;transition:background .2s,border-color .2s}
+  .qopt.right{background:var(--good-soft);border-color:var(--good)}
+  .qopt.wrong{background:var(--warn-soft);border-color:var(--warn)}
+  .tts-ctrls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .voice-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800;background:var(--surface2);color:var(--muted)}
+  .tag.nat{background:var(--good-soft);color:var(--good)}
+  .tag.gut{background:var(--accent-soft);color:var(--accent-strong)}
+  .tag.beta{background:var(--sun-soft);color:var(--sun-ink)}
+  .piperbar{height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;margin-top:8px}
+  .piperbar>div{height:100%;width:0;background:var(--accent);transition:width .3s}
+  details.more{margin-top:10px}
+  details.more summary{cursor:pointer;font-weight:700;color:var(--accent-strong);min-height:44px;display:flex;align-items:center;list-style:none}
+  details.more summary::-webkit-details-marker{display:none}
+  details.more summary::before{content:"▸";margin-right:8px;transition:transform .2s}
+  details.more[open] summary::before{transform:rotate(90deg)}
+
+  footer{margin-top:28px;text-align:center;font-size:13px;color:var(--muted)}
+  footer button{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:600 13px var(--ui);min-height:40px}
+  #dbgpanel{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:#0E1A1F;color:#9FE08A;
+    font:11px/1.5 ui-monospace,Menlo,monospace;padding:8px 10px;z-index:98;border-top:2px solid var(--accent);white-space:pre-wrap;word-break:break-word}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+  @media (max-width:400px){.bigword{font-size:46px}.bigword.long{font-size:30px}.slider-row{grid-template-columns:78px 1fr 80px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar"><span class="wig">⚡</span><h1 id="apptitle">Blitzwörter</h1><span class="wig">⚡</span></div>
-  <div class="tabs">
+  <header class="top">
+    <div class="brand"><div class="logo" aria-hidden="true">L</div><h1 id="apptitle">Lese-Trainer</h1></div>
+    <div class="pill" id="daypill" title="Heutige Runden"><span>Heute</span> <b id="dayrounds">0</b></div>
+  </header>
+  <nav class="tabs" aria-label="Bereiche">
     <button class="tab active" id="tab-blitz">⚡ Blitz</button>
     <button class="tab" id="tab-rsvp">📖 Reader</button>
-    <button class="tab" id="tab-laut">📚 Lesen</button>
-  </div>
+    <button class="tab" id="tab-laut">🎧 Lesen</button>
+  </nav>
 
   <!-- ══════════ BLITZWÖRTER ══════════ -->
   <div id="view-blitz">
     <div id="bw-setup">
-      <p class="center" style="color:var(--dim);margin:0 0 14px">Ein Wort blitzt kurz auf – erkennst du es?</p>
+      <p class="lead">Ein Wort blitzt kurz auf – erkennst du es?</p>
       <div class="card">
         <div class="cardtitle">Wer prüft die Antwort?</div>
         <div class="grid2">
-          <button class="choice" id="bw-mode-mic"><span style="font-size:22px">🎤</span>Mikrofon<span class="small">hört automatisch zu</span></button>
-          <button class="choice" id="bw-mode-tap"><span style="font-size:22px">👆</span>Tippen<span class="small">Eltern prüfen</span></button>
+          <button class="choice" id="bw-mode-mic"><span class="ico">🎤</span>Mikrofon<span class="small">hört automatisch zu</span></button>
+          <button class="choice" id="bw-mode-tap"><span class="ico">👆</span>Tippen<span class="small">selbst bestätigen</span></button>
         </div>
-        <div class="hint" id="bw-micnote" hidden></div>
+        <div class="notice" id="bw-micnote" hidden></div>
       </div>
       <div class="card">
         <div class="cardtitle">Wörter wählen</div>
         <div id="bw-levels"></div>
-        <button class="choice" id="bw-custombtn"><span style="font-size:22px">✏️</span>Eigene Wörter</button>
+        <button class="choice" id="bw-custombtn"><span class="ico">✏️</span>Eigene Wörter</button>
         <textarea id="bw-customtext" rows="4" hidden placeholder="Wörter eingeben, getrennt durch Komma oder Zeile"></textarea>
         <div class="hint" id="bw-homonote" hidden>Hinweis: Gleich klingende Wörter (das/dass, seid/seit …) zählen im Mikrofon-Modus beide als richtig.</div>
       </div>
@@ -134,18 +242,16 @@
         <div class="cardtitle">Wie schnell blitzt das Wort?</div>
         <div class="grid2" id="bw-speeds"></div>
       </div>
-      <button class="btn full" id="bw-start" style="font-size:22px">⚡ Los geht's!</button>
+      <button class="btn big full" id="bw-start">⚡ Los geht's</button>
       <div class="card" id="bw-historycard" hidden style="margin-top:16px">
         <div class="cardtitle between">Letzte Runden
-          <button class="btn ghost" id="bw-clearhist" style="padding:0">löschen</button></div>
+          <button class="btn ghost" id="bw-clearhist" style="padding:0;min-height:0;text-transform:none;letter-spacing:0">löschen</button></div>
         <div id="bw-history"></div>
       </div>
     </div>
 
     <div id="bw-play" hidden>
-      <div class="between" style="font-size:15px;color:var(--dim)">
-        <span id="bw-left"></span><span id="bw-streak"></span>
-      </div>
+      <div class="meta"><span id="bw-left"></span><span id="bw-streak"></span></div>
       <div class="progressbar"><div id="bw-bar"></div></div>
       <div class="stage" id="bw-stage"></div>
       <div class="center" style="margin-top:12px">
@@ -154,16 +260,18 @@
     </div>
 
     <div id="bw-done" hidden class="center">
-      <div style="font-size:64px;animation:popIn .4s" id="bw-emoji"></div>
-      <div style="font-size:44px;letter-spacing:6px" id="bw-stars"></div>
-      <h2 style="font-family:'Fredoka';color:var(--bolt);margin:8px 0" id="bw-praise"></h2>
+      <div class="confetti" id="bw-confetti"></div>
+      <div class="ring" id="bw-ring"></div>
+      <div class="stars" id="bw-stars"></div>
+      <div class="praise" id="bw-praise"></div>
+      <p class="praise-sub" id="bw-praisesub"></p>
       <div class="card" style="text-align:left">
         <div class="statline"><span>Sofort gewusst</span><b id="bw-r1"></b></div>
-        <div class="statline"><span>Beste Blitz-Serie</span><b id="bw-r2"></b></div>
+        <div class="statline"><span>Beste Serie</span><b id="bw-r2"></b></div>
         <div class="statline"><span>Tempo</span><b id="bw-r3"></b></div>
       </div>
-      <p class="hint" id="bw-tip" hidden></p>
-      <button class="btn full" id="bw-again" style="margin-bottom:10px">⚡ Noch eine Runde</button>
+      <div class="notice info" id="bw-tip" hidden></div>
+      <button class="btn full" id="bw-again" style="margin:14px 0 10px">⚡ Noch eine Runde</button>
       <button class="btn sec full" id="bw-back">Level oder Tempo ändern</button>
     </div>
   </div>
@@ -173,8 +281,8 @@
     <div class="card">
       <div class="cardtitle">Text laden</div>
       <div class="filebtns">
-        <button class="btn sec" id="rs-loadfile">📚 Datei öffnen<br><span class="small">.epub oder .txt</span></button>
-        <button class="btn sec" id="rs-pastebtn">📝 Text einfügen</button>
+        <button class="btn sec" id="rs-loadfile">📚 Datei öffnen<span class="small">.epub oder .txt</span></button>
+        <button class="btn sec" id="rs-pastebtn">📝 Text einfügen<span class="small">aus der Zwischenablage</span></button>
       </div>
       <input type="file" id="rs-file" class="srconly" accept=".txt,.epub,text/plain,application/epub+zip">
       <textarea id="rs-paste" rows="5" hidden placeholder="Text hier einfügen …" style="margin-top:10px"></textarea>
@@ -185,7 +293,7 @@
     <div id="rs-reader" hidden>
       <div class="between" style="margin-bottom:6px">
         <span class="badge" id="rs-title"></span>
-        <span style="font-size:13px;color:var(--dim)" id="rs-pos"></span>
+        <span class="small" id="rs-pos"></span>
       </div>
       <div class="progressbar"><div id="rs-bar"></div></div>
       <div class="rsvp-stage" id="rs-stage">
@@ -199,80 +307,106 @@
           <output id="rs-wpmout">300 WpM</output>
         </div>
         <div class="slider-row">
-          <label for="rs-size">Schriftgröße</label>
+          <label for="rs-size">Schrift</label>
           <input type="range" id="rs-size" min="28" max="64" step="2" value="46">
           <output id="rs-sizeout">46 px</output>
         </div>
-        <div class="row" style="margin-top:10px">
-          <button class="btn sec" id="rs-back10">⏪ 10 Wörter</button>
-          <button class="btn" id="rs-playpause" style="min-width:130px">▶ Start</button>
+        <div class="row" style="margin-top:12px">
+          <button class="btn sec" id="rs-back10">⏪ 10</button>
+          <button class="btn" id="rs-playpause" style="min-width:140px">▶ Start</button>
           <button class="btn sec" id="rs-restart">⏮ Anfang</button>
         </div>
       </div>
-      <div class="hint center">Satzenden und Beistriche bekommen automatisch eine kleine Pause.<br>Position und Tempo werden gespeichert.</div>
+      <div class="hint center">Satzenden und Beistriche bekommen automatisch eine kleine Pause. Position und Tempo werden gespeichert.</div>
     </div>
   </div>
 
-  <!-- ═══ LAUTLESEN ═══ -->
+  <!-- ═══ LESEN (Lautlesen / Vorlesen) ═══ -->
   <div id="view-laut" hidden>
     <div id="lr-setup">
       <div class="card">
         <div class="cardtitle">Text für heute</div>
         <textarea id="lr-text-in" rows="7" placeholder="Kurzen Text einfügen (ideal: 100–150 Wörter). Absätze mit Leerzeile trennen – nach jedem Absatz kommt eine Frage."></textarea>
-        <div class="grid2" style="margin-top:10px">
-          <button class="choice" id="lr-mode-self"><span style="font-size:22px">🎤</span>Selber lesen<span class="small">Mikro hört mit</span></button>
-          <button class="choice" id="lr-mode-tts"><span style="font-size:22px">🔊</span>Vorlesen lassen<span class="small">Tandem-Stimme</span></button>
+        <div class="grid2" style="margin-top:12px">
+          <button class="choice" id="lr-mode-self"><span class="ico">🎤</span>Selber lesen<span class="small">Mikro hört mit</span></button>
+          <button class="choice" id="lr-mode-tts"><span class="ico">🔊</span>Vorlesen lassen<span class="small">Stimme liest, du liest mit</span></button>
         </div>
-        <label id="lr-quizrow" style="display:flex;align-items:center;gap:10px;margin-top:12px;font-size:16px;cursor:pointer">
-          <input type="checkbox" id="lr-quiz" checked style="width:20px;height:20px;accent-color:var(--bolt)">
+        <label class="check" id="lr-quizrow" style="margin-top:8px">
+          <input type="checkbox" id="lr-quiz" checked>
           Nach jedem Absatz eine Frage stellen
         </label>
-        <div class="slider-row" id="lr-raterow" hidden style="margin-top:10px">
-          <label for="lr-rate">Vorlese-Tempo</label>
-          <input type="range" id="lr-rate" min="0.5" max="1.4" step="0.05" value="0.9">
-          <output id="lr-rateout">0.90×</output>
-        </div>
-        <div id="lr-voicerow" hidden style="margin-top:8px">
-          <select id="lr-voice"></select>
-          <div class="grid2" style="margin-top:8px">
-            <button class="btn sec" id="lr-test" style="font-size:15px">🔊 Anhören</button>
-            <button class="btn sec" id="lr-rescan" style="font-size:15px">🔄 Stimmen neu suchen</button>
-          </div>
-          <div class="hint">Die Stimmqualität hängt vom Browser ab: Am natürlichsten klingen Edge (Katja/Conrad Natural) und Chrome (Google-Stimmen). Safari und iPhone/iPad bieten Webseiten nur Standard-Stimmen an.</div>
-        </div>
-        <button class="btn full" id="lr-start" style="margin-top:14px;font-size:20px">Los!</button>
         <div class="hint" id="lr-note"></div>
       </div>
+
+      <div class="card" id="lr-voicecard" hidden>
+        <div class="cardtitle">Stimme</div>
+        <select id="lr-voice" aria-label="Stimme wählen"></select>
+        <div class="voice-meta" id="lr-voicemeta"></div>
+        <div class="slider-row" style="margin-top:12px">
+          <label for="lr-rate">Tempo</label>
+          <input type="range" id="lr-rate" min="0.6" max="1.4" step="0.05" value="0.95">
+          <output id="lr-rateout">0.95×</output>
+        </div>
+        <div class="slider-row">
+          <label for="lr-pitch">Tonhöhe</label>
+          <input type="range" id="lr-pitch" min="0.7" max="1.3" step="0.05" value="1">
+          <output id="lr-pitchout">1.00</output>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <button class="btn sec" id="lr-test">🔊 Anhören</button>
+          <button class="btn sec" id="lr-rescan">🔄 Neu suchen</button>
+        </div>
+        <div class="notice" id="lr-novoice" hidden></div>
+        <details class="more" id="lr-piperbox">
+          <summary>Offline-Stimme (Beta) <span class="tag beta" style="margin-left:8px">neu</span></summary>
+          <div class="hint" style="margin-top:0">Eine natürliche Stimme, die direkt im Browser rechnet – unabhängig von den Stimmen deines Geräts.
+            Beim Einschalten wird einmalig ein Stimmpaket geladen (ca. <span id="lr-pipersize">60</span> MB) plus etwa 30 MB Laufzeit; danach bleibt alles im Browser gespeichert. Braucht ein halbwegs aktuelles Gerät.</div>
+          <label class="check" style="margin-top:6px"><input type="checkbox" id="lr-piper"> Offline-Stimme verwenden</label>
+          <select id="lr-pipervoice" aria-label="Offline-Stimme wählen" style="margin-top:6px"></select>
+          <div class="piperbar" id="lr-piperbar" hidden><div></div></div>
+          <div class="hint" id="lr-piperstatus"></div>
+        </details>
+      </div>
+
+      <button class="btn big full" id="lr-start" style="margin-top:4px">Los!</button>
     </div>
 
     <div id="lr-run" hidden>
-      <div class="between" style="font-size:15px;color:var(--dim);margin-bottom:6px">
-        <span id="lr-status"></span><span id="lr-timer" style="font-weight:800;color:var(--bolt)">0:00</span>
+      <div class="meta" style="margin-bottom:6px">
+        <span id="lr-status"></span><span id="lr-timer" style="color:var(--accent-strong)">0:00</span>
       </div>
-      <div class="card lr-text" id="lr-display" style="font-size:22px;line-height:1.9;max-height:46vh;overflow-y:auto"></div>
-      <div class="hint center" id="lr-heard" style="min-height:18px;margin-top:-8px"></div>
+      <div class="card lr-text" id="lr-display"></div>
+      <div class="hint center" id="lr-heard" style="min-height:18px;margin-top:-6px"></div>
       <div id="lr-quizbox" hidden class="card">
         <div class="cardtitle">Kleine Frage 🧠</div>
-        <p id="lr-q" style="font-size:18px;margin-top:0"></p>
+        <p id="lr-q" style="font:500 18px/1.6 var(--read);margin-top:0"></p>
         <div id="lr-opts"></div>
         <div class="hint" id="lr-qfeed"></div>
       </div>
+      <div class="tts-ctrls" id="lr-ttsctrls" hidden>
+        <button class="btn" id="lr-ttspause">⏸ Pause</button>
+        <button class="btn sec" id="lr-ttsskip">⏭ Nächster Satz</button>
+      </div>
       <div class="row" style="margin-top:12px">
         <button class="btn sec" id="lr-stopbtn">■ Beenden</button>
-        <button class="btn" id="lr-ttspause" hidden>⏸ Pause</button>
       </div>
     </div>
 
     <div id="lr-done" hidden class="center">
-      <div style="font-size:56px;animation:popIn .4s">🏁</div>
-      <h2 style="font-family:'Fredoka';color:var(--bolt);margin:8px 0" id="lr-head"></h2>
+      <div class="confetti" id="lr-confetti"></div>
+      <div class="ring" id="lr-ring"></div>
+      <div class="praise" id="lr-head"></div>
+      <p class="praise-sub" id="lr-sub"></p>
       <div class="card" style="text-align:left" id="lr-stats"></div>
       <div class="card" style="text-align:left" id="lr-redwords" hidden></div>
-      <button class="btn full" id="lr-again">Nochmal denselben Text</button>
+      <button class="btn full" id="lr-again" style="margin-top:6px">Nochmal denselben Text</button>
       <button class="btn sec full" id="lr-new" style="margin-top:10px">Neuer Text</button>
     </div>
   </div>
+
+  <footer>Lese-Trainer · läuft komplett in deinem Browser · <button id="dbgtoggle">Diagnose</button></footer>
 </div>
+<div id="dbgpanel" hidden></div>
 
 <script>
 "use strict";
@@ -286,14 +420,15 @@ const LS = {
 /* Selbstheilung: fehlkodierte Umlaute (Ã¶ statt ö) in gespeicherten Texten reparieren */
 function fixMoji(s){
   if(typeof s!=="string"||!s)return s;
-  if(/Ã[\u0080-\u00bf]/.test(s)){
+  if(/Ã[\u0080-¿]/.test(s)){
     try{
       const f=decodeURIComponent(escape(s));
-      if(!/Ã[\u0080-\u00bf]/.test(f))return f;
+      if(!/Ã[\u0080-¿]/.test(f))return f;
     }catch(e){}
   }
   return s;
 }
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* ───────── Diagnose ───────── */
 const DBG={el:null};
@@ -306,17 +441,58 @@ function dlog(who,msg){
   while(DBG.el.childElementCount>250)DBG.el.firstChild.remove();
   DBG.el.scrollTop=DBG.el.scrollHeight;
 }
-(function(){
-  const b=document.createElement("button");
-  b.textContent="🐞";b.title="Diagnose ein/aus";
-  b.style.cssText="position:fixed;top:10px;right:10px;z-index:99;background:#2A3560;color:#F4F1E4;border:none;border-radius:10px;padding:6px 9px;font-size:16px;cursor:pointer;opacity:.55";
-  const pl=document.createElement("div");
-  pl.style.cssText="position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:rgba(10,14,28,.97);color:#9fe08a;font:11px/1.5 ui-monospace,Menlo,monospace;padding:8px 10px;z-index:98;display:none;border-top:2px solid #FFD338;white-space:pre-wrap;word-break:break-word";
-  document.addEventListener("DOMContentLoaded",()=>{document.body.appendChild(b);document.body.appendChild(pl)});
-  if(document.readyState!=="loading"){document.body.appendChild(b);document.body.appendChild(pl)}
-  DBG.el=pl;
-  b.onclick=()=>{pl.style.display=pl.style.display==="none"?"block":"none"};
-})();
+DBG.el=$("dbgpanel");
+$("dbgtoggle").onclick=()=>{DBG.el.hidden=!DBG.el.hidden};
+
+/* ───────── Tagesfortschritt (kleine Motivation) ───────── */
+const STATS = {
+  data:LS.get("day_stats",{date:"",rounds:0,streak:0,last:""}),
+  today(){return new Date().toISOString().slice(0,10)},
+  load(){
+    if(this.data.date!==this.today()){
+      // neuer Tag: Serie weiterführen, wenn gestern geübt wurde
+      const y=new Date();y.setDate(y.getDate()-1);
+      const yest=y.toISOString().slice(0,10);
+      if(this.data.date!==yest&&this.data.date!=="")this.data.streak=0;
+      this.data.date=this.today();this.data.rounds=0;
+    }
+    this.render();
+  },
+  add(){
+    this.load();
+    this.data.rounds++;
+    if(this.data.last!==this.today()){this.data.streak=(this.data.streak||0)+1;this.data.last=this.today()}
+    LS.set("day_stats",this.data);this.render();
+  },
+  render(){
+    const r=this.data.rounds;
+    $("dayrounds").textContent=r+(r===1?" Runde":" Runden")+(this.data.streak>1?" · "+this.data.streak+" Tage":"");
+    $("daypill").classList.toggle("sun",r>=3);
+  }
+};
+STATS.load();
+
+/* Ergebnis-Ring: Prozentwert als Kreis, Beschriftung darunter */
+function ring(el,frac,label,sub,gold){
+  const r=56,c=2*Math.PI*r,f=Math.max(0,Math.min(1,frac));
+  el.innerHTML=`<svg width="132" height="132" viewBox="0 0 132 132">
+    <circle class="track" cx="66" cy="66" r="${r}"/>
+    <circle class="val${gold?" gold":""}" cx="66" cy="66" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c}"/></svg>
+    <div class="lbl">${esc(label)}<small>${esc(sub||"")}</small></div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{el.querySelector(".val").style.strokeDashoffset=c*(1-f)}));
+}
+function confetti(el){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  const cols=["var(--accent)","var(--sun)","var(--good)","var(--warn)"];
+  el.innerHTML="";
+  for(let i=0;i<18;i++){
+    const s=document.createElement("i");
+    s.style.left=(8+Math.random()*84)+"%";s.style.background=cols[i%4];
+    s.style.animationDelay=(Math.random()*.35)+"s";s.style.animationDuration=(.9+Math.random()*.6)+"s";
+    el.appendChild(s);
+  }
+  setTimeout(()=>{el.innerHTML=""},2200);
+}
 
 /* ───────── Tabs ───────── */
 function showTab(t){
@@ -324,7 +500,7 @@ function showTab(t){
     $("view-"+x).hidden = t!==x;
     $("tab-"+x).classList.toggle("active",t===x);
   });
-  $("apptitle").textContent = t==="blitz"?"Blitzwörter":t==="rsvp"?"Speed-Reader":"Lautlesen";
+  $("apptitle").textContent = t==="blitz"?"Blitzwörter":t==="rsvp"?"Speed-Reader":"Lesen";
   if(t!=="rsvp") RSVP.pause();
   if(t!=="blitz") BW.abort(true);
   if(t!=="laut") LR.stopAll();
@@ -359,7 +535,7 @@ const HOMO = {das:"dass",dass:"das",seid:"seit",seit:"seid",wieder:"wider",wider
   stadt:"statt",statt:"stadt",war:"wahr",wahr:"war",seite:"saite",saite:"seite",weise:"waise",waise:"weise",malen:"mahlen",mahlen:"malen",
   rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis"};
 const SPEEDS = [
-  {label:"Schildkröte",emoji:"🐢",ms:700},{label:"Hase",emoji:"🐰",ms:400},
+  {label:"Entspannt",emoji:"🐢",ms:700},{label:"Flott",emoji:"🐰",ms:400},
   {label:"Blitz",emoji:"⚡",ms:300},{label:"Rakete",emoji:"🚀",ms:200}];
 const ROUND=10, LISTEN_MS=8000;
 const SAMPLE_TITLE="Der kleine Drache Funki";
@@ -421,7 +597,7 @@ const BW = {
     const lv=$("bw-levels");lv.innerHTML="";
     for(const k of Object.keys(LEVELS)){
       const b=document.createElement("button");b.className="choice";
-      b.innerHTML=`<span style="font-size:22px">${LEVELS[k].emoji}</span>Level ${k}: ${LEVELS[k].name}`;
+      b.innerHTML=`<span class="ico">${LEVELS[k].emoji}</span><span>Level ${k}: ${LEVELS[k].name}<span class="small">${LEVELS[k].words.length} Wörter</span></span>`;
       b.onclick=()=>{this.cfg.level=+k;this.cfg.custom=false;this.saveCfg()};
       b.dataset.level=k;lv.appendChild(b);
     }
@@ -431,7 +607,7 @@ const BW = {
     const sp=$("bw-speeds");sp.innerHTML="";
     SPEEDS.forEach((s,i)=>{
       const b=document.createElement("button");b.className="choice";
-      b.innerHTML=`<span style="font-size:22px">${s.emoji}</span>${s.label}<span class="small">${(s.ms/1000).toFixed(1)} s</span>`;
+      b.innerHTML=`<span class="ico">${s.emoji}</span>${s.label}<span class="small">${(s.ms/1000).toFixed(1)} s</span>`;
       b.onclick=()=>{this.cfg.speed=i;this.saveCfg()};b.dataset.speed=i;sp.appendChild(b);
     });
     $("bw-start").onclick=()=>this.startRound();
@@ -458,12 +634,13 @@ const BW = {
   refreshStart(){$("bw-start").disabled=this.cfg.custom&&this.customWords().length<3},
   renderHistory(){
     $("bw-historycard").hidden=this.history.length===0;
-    $("bw-history").innerHTML=this.history.slice(-8).map((h,i)=>
-      `<div class="between" style="font-size:15px;padding:3px 0"><span>${h.date||("Runde "+(i+1))}</span><span>${h.first} / ${h.total} sofort ${h.first===h.total?"🌟":""}</span></div>`).join("");
+    $("bw-history").innerHTML=this.history.slice(-8).reverse().map((h,i)=>
+      `<div class="between" style="font-size:15px;padding:5px 0"><span class="small">${esc(h.date||("Runde "+(i+1)))}</span><span><b>${h.first}</b> / ${h.total} sofort ${h.first===h.total?"🌟":""}</span></div>`).join("");
   },
   show(s){
     $("bw-setup").hidden=s!=="setup";$("bw-play").hidden=s!=="play";$("bw-done").hidden=s!=="done";
     if(s==="setup"){this.renderHistory()}
+    window.scrollTo({top:0,behavior:"smooth"});
   },
   startRound(){
     const pool=this.cfg.custom?this.customWords():LEVELS[this.cfg.level].words;
@@ -491,8 +668,8 @@ const BW = {
   phaseIdle(){
     this.cur=null;this.renderPlay();
     if(this.useMic()){this.timer=setTimeout(()=>this.flash(),700);
-      this.stage('<div class="center" style="color:var(--dim)">gleich geht\'s weiter …</div>');}
-    else this.stage('<button class="btn" style="font-size:24px;padding:18px 34px" onclick="BW.flash()">⚡ Wort blitzen!</button>');
+      this.stage('<div class="center small">gleich geht\'s weiter …</div>');}
+    else this.stage('<button class="btn big" style="padding:18px 34px" onclick="BW.flash()">⚡ Wort blitzen</button>');
   },
   useMic(){return this.cfg.mic&&SR&&!this.micBlocked},
   flash(){
@@ -504,7 +681,7 @@ const BW = {
     const tick=()=>{c--;
       if(c>0){showC();this.timer=setTimeout(tick,550)}
       else{
-        this.stage(`<div class="bigword ${this.cur.length>10?"long":""}">${this.cur}</div>`,"flash");
+        this.stage(`<div class="bigword ${this.cur.length>10?"long":""}">${esc(this.cur)}</div>`,"flash");
         this.timer=setTimeout(()=>{this.phaseGuess()},SPEEDS[this.cfg.speed].ms);
       }};
     this.timer=setTimeout(tick,550);
@@ -513,18 +690,18 @@ const BW = {
     if(this.useMic()){
       this.stage(`<div class="center" style="padding:16px;width:100%">
         <div class="micpulse">🎤</div>
-        <p style="font-size:18px;margin:10px 0 4px">Sag das Wort laut!</p>
-        <div id="bw-heard" style="min-height:22px;font-size:15px;color:var(--dim);font-style:italic">Ich höre zu …</div>
+        <p style="font-size:18px;margin:10px 0 4px;font-weight:700">Sag das Wort laut!</p>
+        <div id="bw-heard" class="small" style="min-height:22px;font-style:italic">Ich höre zu …</div>
         <div class="row" style="margin-top:14px">
-          <button class="btn good" style="font-size:15px;padding:8px 16px;box-shadow:none" onclick="BW.manual(true)">✓ war richtig</button>
-          <button class="btn retry" style="font-size:15px;padding:8px 16px;box-shadow:none" onclick="BW.manual(false)">↻ nochmal</button>
+          <button class="btn good" style="font-size:15px;min-height:44px;padding:8px 16px" onclick="BW.manual(true)">✓ war richtig</button>
+          <button class="btn retry" style="font-size:15px;min-height:44px;padding:8px 16px" onclick="BW.manual(false)">↻ nochmal</button>
         </div></div>`);
       this.listen(this.cur);
     }else{
       this.stage(`<div class="center" style="padding:16px">
-        <div style="font-size:40px;letter-spacing:8px;color:var(--dim)">✦ ✦ ✦</div>
-        <p style="font-size:18px;margin:12px 0 18px">Sag das Wort laut!</p>
-        <button class="btn sec" style="font-size:18px" onclick="BW.reveal()">👀 Wort zeigen</button></div>`);
+        <div class="dots">● ● ●</div>
+        <p style="font-size:18px;margin:12px 0 18px;font-weight:700">Sag das Wort laut!</p>
+        <button class="btn sec" onclick="BW.reveal()">👀 Wort zeigen</button></div>`);
     }
   },
   listen(word){
@@ -573,14 +750,14 @@ const BW = {
         this.matched=true;clearTimeout(this.listenTimer);this.autoResult(true,word);return}
       if(this.heardFinal.trim()){
         clearTimeout(this.listenTimer);this.autoResult(false,word);return}
-      // Sofort-Abbruch (macOS blockiert Diktat-Dienst)? Nicht endlos haemmern:
+      // Sofort-Abbruch (macOS blockiert Diktat-Dienst)? Nicht endlos hämmern:
       if(Date.now()-rec._t0<1500&&rec._err){
         this.fastFails=(this.fastFails||0)+1;
         if(this.fastFails>=6){
           dlog("BW","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
           this.micBlocked=true;
           $("bw-micnote").hidden=false;
-          $("bw-micnote").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Datei in Chrome öffnen.";
+          $("bw-micnote").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Seite in Chrome öffnen.";
           clearTimeout(this.listenTimer);
           this.reveal();
           return;
@@ -596,25 +773,25 @@ const BW = {
   autoResult(ok,word){
     this.clearTimers();
     if(ok){
-      this.stage(`<div class="center" style="animation:popIn .3s"><div style="font-size:52px">✅</div>
-        <div style="font-size:40px;font-weight:800;color:var(--good)">${word}</div>
-        <div style="font-size:17px;color:var(--dim)">Richtig!</div></div>`,"ok");
+      this.stage(`<div class="center pop"><div style="font-size:48px">✅</div>
+        <div style="font:600 40px var(--read);color:var(--good)">${esc(word)}</div>
+        <div class="small">Richtig!</div></div>`,"ok");
       this.timer=setTimeout(()=>this.advance(true,word),1000);
     }else{
       const heard=this.heardFinal.trim().split(/\s+/).slice(-4).join(" ");
-      this.stage(`<div class="center" style="animation:popIn .3s;padding:12px">
-        <div style="font-size:40px;font-weight:800;color:var(--retry)">${word}</div>
-        ${heard?`<div style="font-size:15px;color:var(--dim);margin-top:4px">Ich habe „${heard}“ verstanden</div>`:""}
-        <div style="font-size:16px;margin-top:8px">Kommt gleich nochmal! ↻</div></div>`,"no");
+      this.stage(`<div class="center pop" style="padding:12px">
+        <div style="font:600 40px var(--read);color:var(--warn)">${esc(word)}</div>
+        ${heard?`<div class="small" style="margin-top:4px">Ich habe „${esc(heard)}“ verstanden</div>`:""}
+        <div style="font-size:16px;margin-top:8px;font-weight:700">Kommt gleich nochmal ↻</div></div>`,"no");
       this.timer=setTimeout(()=>this.advance(false,word),1800);
     }
   },
   reveal(){
     this.stopRec();this.clearTimers();
     this.stage(`<div class="center" style="padding:16px;width:100%">
-      <div class="bigword ${this.cur.length>10?"long":""}" style="color:var(--bolt);margin-bottom:20px">${this.cur}</div>
+      <div class="bigword ${this.cur.length>10?"long":""}" style="color:var(--accent-strong);margin-bottom:20px">${esc(this.cur)}</div>
       <div class="row">
-        <button class="btn good" style="min-width:140px" onclick="BW.manual(true)">✓ Gewusst!</button>
+        <button class="btn good" style="min-width:140px" onclick="BW.manual(true)">✓ Gewusst</button>
         <button class="btn retry" style="min-width:140px" onclick="BW.manual(false)">↻ Nochmal</button>
       </div></div>`);
   },
@@ -638,10 +815,12 @@ const BW = {
     this.history.push({date:d.toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit"}),first:this.firstTry,total:this.total});
     if(this.history.length>30)this.history=this.history.slice(-30);
     LS.set("bw_hist",this.history);
+    STATS.add();
     const stars=this.firstTry===this.total?3:this.firstTry>=this.total*0.7?2:1;
-    $("bw-emoji").textContent=stars===3?"🏆":stars===2?"🎉":"💪";
-    $("bw-stars").textContent="⭐".repeat(stars)+"☆".repeat(3-stars);
+    ring($("bw-ring"),this.firstTry/this.total,`${this.firstTry}/${this.total}`,"sofort",stars===3);
+    $("bw-stars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
     $("bw-praise").textContent=stars===3?"Perfekte Runde!":stars===2?"Stark gemacht!":"Runde geschafft!";
+    $("bw-praisesub").textContent=stars===3?"Alle Wörter auf den ersten Blick erkannt.":stars===2?"Fast alles sofort erkannt – weiter so.":"Jede Runde macht dich schneller.";
     $("bw-r1").textContent=`${this.firstTry} von ${this.total}`;
     $("bw-r2").textContent=`${this.best} ⚡`;
     $("bw-r3").textContent=`${SPEEDS[this.cfg.speed].emoji} ${SPEEDS[this.cfg.speed].label}`;
@@ -651,6 +830,7 @@ const BW = {
       tip.textContent=`Tipp: Trau dich eine Stufe schneller – ${SPEEDS[this.cfg.speed+1].emoji} ${SPEEDS[this.cfg.speed+1].label}!`;
     }else tip.hidden=true;
     this.show("done");
+    if(stars===3)confetti($("bw-confetti"));
   },
   abort(silent){
     this.clearTimers();this.stopRec();
@@ -689,7 +869,7 @@ const RSVP = {
     // Gespeicherten Text wiederherstellen
     const saved=LS.get("rs_text",null);
     if(saved&&saved.text){this.setText(fixMoji(saved.text),fixMoji(saved.title)||"Gespeicherter Text",LS.get("rs_pos",0),true)}
-    else this.setText(SAMPLE_TEXT,SAMPLE_TITLE);
+    else this.setText(SAMPLE_TEXT,SAMPLE_TITLE,0,false,true);
   },
   saveCfg(){LS.set("rs_cfg",this.cfg)},
   applyCfg(){
@@ -756,7 +936,7 @@ const RSVP = {
     return {text,title};
   },
 
-  setText(text,title,startIdx,restored){
+  setText(text,title,startIdx,restored,quiet){
     this.pause();
     // Tokenisieren + Pausen-Markierung
     this.words=[];this.pauses=[];
@@ -780,7 +960,7 @@ const RSVP = {
     if(text.length<400000){LS.set("rs_text",{text,title})}
     else{LS.del("rs_text");$("rs-fileinfo").textContent+=" (Zu groß zum Speichern – Position merkt sich die App trotzdem, solange die Datei erneut geladen wird.)"}
     this.savePos();this.renderWord();
-    $("rs-reader").scrollIntoView({behavior:"smooth",block:"start"});
+    if(!quiet)$("rs-reader").scrollIntoView({behavior:"smooth",block:"start"});
   },
   savePos(){LS.set("rs_pos",this.idx)},
 
@@ -804,7 +984,7 @@ const RSVP = {
     const stage=el.parentElement;
     const stageW=stage.clientWidth;
     const cx=stageW*0.42;
-    el.style.fontSize="";                       // erst mit Normalgroesse messen
+    el.style.fontSize="";                       // erst mit Normalgröße messen
     let wordW=el.offsetWidth;
     if(wordW>stageW-16){                        // sehr langes Wort: verkleinern bis es passt
       const base=parseFloat(getComputedStyle(el).fontSize);
@@ -836,7 +1016,7 @@ const RSVP = {
     const d=this.delayFor(this.idx);
     this.timer=setTimeout(()=>{
       if(this.idx<this.words.length-1){this.idx++;if(this.idx%25===0)this.savePos();this.step()}
-      else{this.pause();this.savePos();$("rs-tap").textContent="Fertig! 🎉 Tippen für nochmal von hier."}
+      else{this.pause();this.savePos();STATS.add();$("rs-tap").textContent="Fertig! 🎉 Tippen für nochmal von hier."}
     },d);
   },
   toggle(){this.playing?this.pause():this.play()},
@@ -863,46 +1043,390 @@ const RSVP = {
 };
 RSVP.init();
 
-/* ═════════ LAUTLESEN ═════════ */
+/* ═════════ STIMME (Web Speech API + optionale Offline-Stimme) ═════════ */
+const HAS_TTS=(()=>{try{return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance&&typeof speechSynthesis.getVoices==="function")}catch(e){return false}})();
+const TTS = {
+  cfg:Object.assign({voice:"auto",rate:0.95,pitch:1,piper:false,piperVoice:"de_DE-thorsten-low"},LS.get("tts_cfg",{})),
+  _list:[],_sig:"",onVoices:null,
+
+  init(){
+    // Übergang von der alten Konfiguration (lr_cfg.rate / lr_cfg.voice)
+    const old=LS.get("lr_cfg",{});
+    if(!LS.get("tts_cfg",null)){
+      if(old.rate)this.cfg.rate=+old.rate;
+      if(old.voice)this.cfg.voice=old.voice;
+      this.save();
+    }
+    if(!HAS_TTS)return;
+    speechSynthesis.onvoiceschanged=()=>this.refresh();
+    this.refresh();
+    // Safari/iOS liefern die Liste oft verspätet und ohne Event:
+    [400,1500,4000,8000].forEach(t=>setTimeout(()=>this.refresh(),t));
+  },
+  save(){LS.set("tts_cfg",this.cfg)},
+
+  /* Qualitätsstufe einer Stimme: 3 = natürlich/neuronal, 2 = gut, 1 = Standard, 0 = schwach */
+  tier(v){
+    const n=(v.name||"").toLowerCase(),u=(v.voiceURI||"").toLowerCase();
+    if(/espeak|compact|eloquence|grandpa|grandma|zarvox|trinoids|albert|bahh|bells|boing|bubbles|cellos|whisper|wobble|junior|kathy|ralph|fred/.test(n))return 0;
+    if(/natural|neural|online|premium|enhanced|erweitert|\(verbessert\)|siri|wavenet|journey/.test(n))return 3;
+    if(/google/.test(n)&&!/android/.test(n))return 3;
+    if(/microsoft/.test(n)||/apple|com\.apple\.voice\.premium|com\.apple\.ttsbundle/.test(u))return 2;
+    if(/petra|anna|helena|markus|viktor|katja|conrad|hedda|stefan|yannick/.test(n))return 2;
+    return 1;
+  },
+  score(v){
+    let s=this.tier(v)*100;
+    const n=(v.name||"").toLowerCase(),l=(v.lang||"").toLowerCase();
+    if(/natural/.test(n))s+=30;              // Microsoft „Online (Natural)“ ganz nach vorn
+    if(/google/.test(n)&&!/android/.test(n))s+=20;
+    if(/premium/.test(n))s+=15;else if(/enhanced|erweitert/.test(n))s+=10;
+    if(/siri/.test(n))s+=8;
+    if(l==="de-at")s+=5;
+    if(l==="de-de")s+=3;
+    if(v.localService)s+=1;                  // bei Gleichstand: lokal (keine Abbrüche)
+    return s;
+  },
+  tierLabel(t){return t===3?"natürlich":t===2?"gut":t===1?"Standard":"einfach"},
+  voices(){return this._list},
+  refresh(){
+    if(!HAS_TTS)return;
+    const vs=speechSynthesis.getVoices()
+      .filter(v=>v.lang&&/^de(-|_|$)/i.test(v.lang))
+      .sort((a,b)=>this.score(b)-this.score(a));
+    const sig=vs.map(v=>v.voiceURI).join("|");
+    if(sig===this._sig)return;
+    this._sig=sig;this._list=vs;
+    dlog("TTS","Deutsche Stimmen ("+vs.length+"): "+(vs.map(v=>v.name+"["+this.tier(v)+"]").join(", ")||"keine"));
+    if(this.onVoices)this.onVoices(vs);
+  },
+  rescan(){
+    this._sig="";
+    try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u);speechSynthesis.cancel()}catch(e){}
+    this.refresh();setTimeout(()=>this.refresh(),600);setTimeout(()=>this.refresh(),2000);
+    dlog("TTS","Manueller Neu-Scan ausgelöst");
+  },
+  best(){return this._list[0]||null},
+  /* Die tatsächlich benutzte Browserstimme (Auswahl oder beste) */
+  pick(){
+    if(this.cfg.voice&&this.cfg.voice!=="auto"){
+      const v=this._list.find(x=>x.voiceURI===this.cfg.voice);
+      if(v)return v;
+    }
+    return this.best();
+  },
+  usePiper(){return !!this.cfg.piper},
+  /* Kann überhaupt deutsch vorgelesen werden? */
+  available(){return this.usePiper()||(HAS_TTS&&this._list.length>0)},
+
+  /* Text in Sätze zerlegen. Eingabe: Wörter mit globalem Index; Ausgabe: [{text,words:[{w,idx,off}]}] */
+  sentences(words,startIdx){
+    const out=[];let cur=[],len=0,n=0;
+    const flush=()=>{if(cur.length){
+      let text="";const ws=cur.map((w,i)=>{const off=text.length;text+=w+(i<cur.length-1?" ":"");return {w,idx:startIdx+n+i,off}});
+      n+=cur.length;out.push({text,words:ws});cur=[];len=0}};
+    words.forEach(w=>{
+      cur.push(w);len+=w.length+1;
+      const end=/[.!?…]["»«“”')\]]?$/.test(w);
+      if((end&&len>12)||len>220||cur.length>=34)flush();
+    });
+    flush();
+    return out;
+  },
+
+  /* Eine Satzfolge vorlesen. Rückgabe: Steuerung mit pause()/resume()/stop()/skip(). */
+  speak(sents,h){
+    h=h||{};
+    const ctrl={i:0,paused:false,stopped:false,cur:null,
+      pause(){ if(this.paused||this.stopped)return;this.paused=true;
+        if(this.cur&&this.cur.pause)this.cur.pause();else if(this.cur)this.cur.cancel(); if(h.onPause)h.onPause() },
+      resume(){ if(!this.paused||this.stopped)return;this.paused=false;
+        if(this.cur&&this.cur.resume){this.cur.resume()}else next(false); if(h.onResume)h.onResume() },
+      skip(){ if(this.stopped)return;if(this.cur)this.cur.cancel();this.paused=false;next(true) },
+      stop(){ this.stopped=true;if(this.cur)this.cur.cancel();this.cur=null;if(HAS_TTS)try{speechSynthesis.cancel()}catch(e){} },
+    };
+    const next=(advance)=>{
+      if(ctrl.stopped||ctrl.paused)return;
+      if(advance)ctrl.i++;
+      if(ctrl.i>=sents.length){ctrl.cur=null;if(h.onDone)h.onDone();return}
+      const s=sents[ctrl.i];
+      if(h.onSentence)h.onSentence(ctrl.i,s);
+      const done=()=>{ if(ctrl.stopped)return; if(h.onSentenceDone)h.onSentenceDone(ctrl.i,s); next(true) };
+      ctrl.cur=this.usePiper()?PIPER.speakSentence(s,h,done,ctrl):this.speakBrowser(s,h,done);
+    };
+    if(HAS_TTS)try{speechSynthesis.cancel()}catch(e){}
+    next(false);
+    return ctrl;
+  },
+
+  /* Zeitliche Schätzung der Wortgrenzen (für Stimmen ohne boundary-Ereignisse) */
+  estimateSchedule(s,totalMs,onWord){
+    const weights=s.words.map(w=>w.w.replace(/[^\p{L}\p{N}]/gu,"").length+1.2);
+    const sum=weights.reduce((a,b)=>a+b,0);
+    const timers=[];let t=0;
+    s.words.forEach((w,i)=>{
+      timers.push(setTimeout(()=>onWord(w.idx),t));
+      t+=totalMs*weights[i]/sum;
+    });
+    return ()=>timers.forEach(clearTimeout);
+  },
+
+  speakBrowser(s,h,done){
+    const u=new SpeechSynthesisUtterance(s.text);
+    const v=this.pick();
+    u.lang=v?v.lang:"de-DE";u.rate=this.cfg.rate;u.pitch=this.cfg.pitch;if(v)u.voice=v;
+    let finished=false,gotBoundary=false,wd=null,estTimer=null,cancelEst=null,t0=0;
+    const est=Math.max(1200,s.text.length*65/this.cfg.rate+300);
+    const finish=()=>{if(finished)return;finished=true;clearTimeout(wd);clearTimeout(estTimer);if(cancelEst)cancelEst();done()};
+    const guard=()=>{ if(finished)return; dlog("TTS","Watchdog: Satz hängt → weiter"); try{speechSynthesis.cancel()}catch(e){} finish() };
+    u.onstart=()=>{
+      t0=performance.now();
+      if(h.onWord&&s.words.length)h.onWord(s.words[0].idx);
+      // Liefert die Stimme nach kurzer Zeit keine Wortgrenzen, wird geschätzt
+      estTimer=setTimeout(()=>{ if(!gotBoundary&&!finished&&h.onWord){
+        const rest=Math.max(300,est-(performance.now()-t0));
+        cancelEst=this.estimateSchedule(s,rest,h.onWord);
+      }},Math.min(450,est/3));
+    };
+    u.onboundary=e=>{
+      if(e.name&&e.name!=="word")return;
+      gotBoundary=true;clearTimeout(estTimer);if(cancelEst){cancelEst();cancelEst=null}
+      clearTimeout(wd);wd=setTimeout(guard,8000);
+      let wi=0;for(let i=0;i<s.words.length;i++){if(e.charIndex>=s.words[i].off)wi=i;else break}
+      if(h.onWord)h.onWord(s.words[wi].idx);
+    };
+    u.onend=finish;
+    u.onerror=ev=>{
+      if(ev.error==="interrupted"||ev.error==="canceled")return;   // durch Pause/Stopp ausgelöst
+      dlog("TTS","Utterance-Fehler: "+(ev.error||"?"));
+      if(h.onError)h.onError(ev.error);
+      finish();
+    };
+    wd=setTimeout(guard,est*2+5000);
+    try{speechSynthesis.speak(u)}catch(e){dlog("TTS","speak() Fehler: "+e.message);finish()}
+    // Chrome-Eigenheit: nach einer Pause von außen (Tabwechsel) bleibt die Engine manchmal pausiert
+    if(speechSynthesis.paused)try{speechSynthesis.resume()}catch(e){}
+    return {cancel(){ if(finished)return; finished=true;clearTimeout(wd);clearTimeout(estTimer);if(cancelEst)cancelEst();
+      try{speechSynthesis.cancel()}catch(e){} }};
+  },
+
+  /* Kurzer Test der aktuellen Stimme */
+  test(text,onStatus){
+    if(this.ctrlTest)this.ctrlTest.stop();
+    const words=(text||"Hallo! So klinge ich, wenn ich dir vorlese. Hörst du mich gut?").split(/\s+/);
+    const sents=this.sentences(words,0);
+    this.ctrlTest=this.speak(sents,{onError:e=>onStatus&&onStatus("Fehler: "+e),onDone:()=>onStatus&&onStatus(""),onStatus});
+    return this.ctrlTest;
+  },
+};
+
+/* ── Offline-Stimme: Piper (VITS) per WebAssembly, erst bei Bedarf geladen ── */
+const PIPER = {
+  // Modul von jsDelivr (ESM); Stimmen von Hugging Face. Beides wird vom Browser zwischengespeichert.
+  MODULE_URL:"https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm",
+  VOICES:[
+    {id:"de_DE-thorsten-low",label:"Thorsten (männlich, ruhig)",mb:60},
+    {id:"de_DE-kerstin-low",label:"Kerstin (weiblich)",mb:60},
+    {id:"de_DE-ramona-low",label:"Ramona (weiblich)",mb:60},
+    {id:"de_DE-eva_k-x_low",label:"Eva (weiblich, kleines Paket)",mb:25},
+  ],
+  mod:null,worker:null,ready:false,busy:false,cache:new Map(),audio:null,onStatus:null,onProgress:null,_req:0,_pend:new Map(),
+
+  status(msg){dlog("PIPER",msg);if(this.onStatus)this.onStatus(msg)},
+  /* Das Sprachmodul läuft in einem Web Worker, damit die Oberfläche beim Rechnen nicht stockt.
+     Klappt das nicht (ältere Browser), wird es im Hauptthread geladen. */
+  workerSrc(){
+    return `let mod;
+      self.onmessage=async e=>{
+        const {id,op,args}=e.data;
+        try{
+          if(!mod)mod=await import(${JSON.stringify(this.MODULE_URL)});
+          let r;
+          if(op==="stored")r=await mod.stored();
+          else if(op==="download")r=await mod.download(args.voiceId,p=>self.postMessage({id,progress:{loaded:p.loaded,total:p.total}}));
+          else if(op==="predict")r=await mod.predict({text:args.text,voiceId:args.voiceId});
+          self.postMessage({id,ok:true,result:r});
+        }catch(err){self.postMessage({id,ok:false,error:String(err&&err.message||err)})}
+      };`;
+  },
+  call(op,args,onProgress){
+    return new Promise((res,rej)=>{
+      const id=++this._req;
+      this._pend.set(id,{res,rej,onProgress});
+      this.worker.postMessage({id,op,args});
+    });
+  },
+  async load(){
+    if(this.mod||this.worker)return;
+    this.status("Lade Sprachmodul …");
+    try{
+      const url=URL.createObjectURL(new Blob([this.workerSrc()],{type:"text/javascript"}));
+      const w=new Worker(url,{type:"module"});
+      w.onmessage=e=>{
+        const d=e.data,p=this._pend.get(d.id);if(!p)return;
+        if(d.progress){if(p.onProgress)p.onProgress(d.progress);return}
+        this._pend.delete(d.id);
+        d.ok?p.res(d.result):p.rej(new Error(d.error));
+      };
+      w.onerror=ev=>{dlog("PIPER","Worker-Fehler: "+(ev.message||"?"));for(const [id,p] of this._pend){p.rej(new Error(ev.message||"Worker-Fehler"))}this._pend.clear()};
+      this.worker=w;
+      await this.call("stored",{});       // Probelauf: lädt das Modul im Worker
+    }catch(e){
+      dlog("PIPER","Worker nicht möglich ("+(e&&e.message||e)+") – lade im Hauptthread");
+      if(this.worker){try{this.worker.terminate()}catch(x){}this.worker=null}
+      this.mod=await import(this.MODULE_URL);
+    }
+  },
+  op(name,args,onProgress){
+    if(this.worker)return this.call(name,args,onProgress);
+    if(name==="stored")return this.mod.stored();
+    if(name==="download")return this.mod.download(args.voiceId,onProgress);
+    return this.mod.predict({text:args.text,voiceId:args.voiceId});
+  },
+  /* Modul + gewähltes Stimmpaket bereitstellen (Download mit Fortschritt) */
+  async prepare(){
+    if(this.busy)return false;
+    this.busy=true;
+    try{
+      await this.load();
+      const id=TTS.cfg.piperVoice;
+      const stored=await this.op("stored",{});
+      if(!stored.includes(id)){
+        this.status("Lade Stimmpaket … (nur beim ersten Mal)");
+        await this.op("download",{voiceId:id},p=>{
+          if(this.onProgress&&p&&p.total)this.onProgress(p.loaded/p.total);
+        });
+      }
+      if(this.onProgress)this.onProgress(1);
+      // Erster Aufruf wärmt die Laufzeit auf
+      this.status("Bereite Stimme vor …");
+      await this.synth("Hallo.");
+      this.ready=true;
+      this.status("Offline-Stimme bereit.");
+      return true;
+    }catch(e){
+      this.ready=false;
+      this.status("Offline-Stimme konnte nicht geladen werden: "+(e&&e.message||e));
+      return false;
+    }finally{this.busy=false}
+  },
+  async synth(text){
+    const key=TTS.cfg.piperVoice+"|"+text;
+    if(this.cache.has(key))return this.cache.get(key);
+    await this.load();
+    const p=this.op("predict",{text,voiceId:TTS.cfg.piperVoice});
+    this.cache.set(key,p);
+    p.catch(()=>this.cache.delete(key));
+    if(this.cache.size>40){const k=this.cache.keys().next().value;this.cache.delete(k)}
+    return p;
+  },
+  /* Audio-Element einmal per Nutzergeste freischalten (iOS) */
+  unlock(){
+    if(this.audio)return;
+    const a=new Audio();a.preload="auto";
+    this.audio=a;
+    try{a.src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";a.play().catch(()=>{})}catch(e){}
+  },
+  /* Einen Satz sprechen; passt in TTS.speak() wie speakBrowser */
+  speakSentence(s,h,done,ctrl){
+    let finished=false,cancelled=false,cancelEst=null;
+    const a=this.audio||(this.audio=new Audio());
+    const finish=()=>{if(finished)return;finished=true;if(cancelEst)cancelEst();a.onended=null;a.onerror=null;done()};
+    (async()=>{
+      try{
+        // Nächsten Satz schon vorbereiten, damit keine Lücke entsteht
+        const blob=await this.synth(s.text);
+        if(cancelled)return;
+        const url=URL.createObjectURL(blob);
+        a.src=url;a.playbackRate=TTS.cfg.rate;
+        a.onloadedmetadata=()=>{
+          if(cancelled)return;
+          if(h.onWord&&isFinite(a.duration))cancelEst=TTS.estimateSchedule(s,a.duration*1000/TTS.cfg.rate,h.onWord);
+        };
+        a.onended=()=>{URL.revokeObjectURL(url);finish()};
+        a.onerror=()=>{URL.revokeObjectURL(url);this.status("Wiedergabefehler");finish()};
+        await a.play();
+      }catch(e){
+        if(cancelled)return;
+        this.status("Offline-Stimme: "+(e&&e.message||e));
+        if(h.onError)h.onError(String(e&&e.message||e));
+        finish();
+      }
+    })();
+    return {
+      cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true},
+      pause(){try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
+      resume(){try{a.play()}catch(e){}
+        if(h.onWord&&isFinite(a.duration)){const rest=(a.duration-a.currentTime)*1000/TTS.cfg.rate;
+          // Restliche Wörter grob neu verteilen
+          const frac=a.currentTime/a.duration;const start=Math.floor(frac*s.words.length);
+          const sub={words:s.words.slice(start)};if(sub.words.length)cancelEst=TTS.estimateSchedule(sub,rest,h.onWord)}},
+    };
+  },
+  /* Sätze im Voraus synthetisieren (ohne auf das Ergebnis zu warten) */
+  prefetch(sents,from){
+    for(let i=from;i<Math.min(from+2,sents.length);i++)this.synth(sents[i].text).catch(()=>{});
+  },
+};
+TTS.init();
+
+/* ═════════ LESEN ═════════ */
 const LR = {
-  cfg:Object.assign({mode:"self",quiz:true,rate:0.9,voice:""},LS.get("lr_cfg",{})),
+  cfg:Object.assign({mode:"self",quiz:true},LS.get("lr_cfg",{})),
   paras:[],flat:[],paraEnd:[],mode:"self",
   running:false,finished:true,rec:null,committed:[],
   quizAsked:new Set(),quizRight:0,quizTotal:0,
-  t0:null,tInt:null,curPara:0,ttsPaused:false,pointer:0,lastStatus:null,
+  t0:null,tInt:null,curPara:0,pointer:0,lastStatus:null,ctrl:null,
 
   init(){
     $("lr-text-in").value=fixMoji(LS.get("lr_text",""))||SAMPLE_TEXT;
     $("lr-text-in").oninput=e=>LS.set("lr_text",e.target.value);
     $("lr-quiz").checked=this.cfg.quiz;
     $("lr-quiz").onchange=e=>{this.cfg.quiz=e.target.checked;this.save()};
-    $("lr-rate").value=this.cfg.rate;
-    $("lr-rateout").textContent=(+this.cfg.rate).toFixed(2)+"×";
-    $("lr-rate").oninput=e=>{this.cfg.rate=+e.target.value;
-      $("lr-rateout").textContent=this.cfg.rate.toFixed(2)+"×";this.save()};
     $("lr-mode-self").onclick=()=>{this.cfg.mode="self";this.save();this.applyMode()};
     $("lr-mode-tts").onclick=()=>{this.cfg.mode="tts";this.save();this.applyMode()};
-    $("lr-voice").onchange=e=>{this.cfg.voice=e.target.value;this.save()};
-    $("lr-test").onclick=()=>this.testVoice();
-    $("lr-rescan").onclick=()=>{
-      this._voiceSig="";
-      try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u);speechSynthesis.cancel()}catch(e){}
-      this.fillVoices();
-      setTimeout(()=>this.fillVoices(),600);
-      setTimeout(()=>this.fillVoices(),2000);
-      dlog("TTS","Manueller Neu-Scan ausgelöst".replace("\u00f6","ö"));
+    // Stimme
+    $("lr-rate").value=TTS.cfg.rate;$("lr-pitch").value=TTS.cfg.pitch;
+    const outs=()=>{$("lr-rateout").textContent=(+TTS.cfg.rate).toFixed(2)+"×";$("lr-pitchout").textContent=(+TTS.cfg.pitch).toFixed(2)};
+    outs();
+    $("lr-rate").oninput=e=>{TTS.cfg.rate=+e.target.value;outs();TTS.save()};
+    $("lr-pitch").oninput=e=>{TTS.cfg.pitch=+e.target.value;outs();TTS.save()};
+    $("lr-voice").onchange=e=>{TTS.cfg.voice=e.target.value;TTS.save();this.renderVoiceMeta()};
+    $("lr-test").onclick=()=>{
+      if(TTS.usePiper())PIPER.unlock();
+      if(!TTS.available()){this.applyMode();return}
+      $("lr-test").disabled=true;
+      TTS.test(null,msg=>{if(msg)$("lr-piperstatus").textContent=msg});
+      setTimeout(()=>{$("lr-test").disabled=false},1200);
+    };
+    $("lr-rescan").onclick=()=>TTS.rescan();
+    TTS.onVoices=()=>{this.fillVoices();this.applyMode()};
+    this.fillVoices();
+    // Offline-Stimme
+    const pv=$("lr-pipervoice");
+    pv.innerHTML=PIPER.VOICES.map(v=>`<option value="${v.id}">${esc(v.label)} · ca. ${v.mb} MB</option>`).join("");
+    pv.value=TTS.cfg.piperVoice;
+    if(!pv.value){pv.value=PIPER.VOICES[0].id;TTS.cfg.piperVoice=pv.value}
+    $("lr-piper").checked=TTS.cfg.piper;
+    $("lr-piperbox").open=TTS.cfg.piper;
+    const sizeOut=()=>{const v=PIPER.VOICES.find(x=>x.id===TTS.cfg.piperVoice);$("lr-pipersize").textContent=v?v.mb:60};
+    sizeOut();
+    PIPER.onStatus=msg=>{$("lr-piperstatus").textContent=msg};
+    PIPER.onProgress=f=>{const b=$("lr-piperbar");b.hidden=f>=1;b.firstElementChild.style.width=Math.round(f*100)+"%"};
+    $("lr-piper").onchange=async e=>{
+      TTS.cfg.piper=e.target.checked;TTS.save();this.applyMode();
+      if(TTS.cfg.piper){PIPER.unlock();const ok=await PIPER.prepare();if(!ok){TTS.cfg.piper=false;$("lr-piper").checked=false;TTS.save();this.applyMode()}}
+    };
+    pv.onchange=async e=>{
+      TTS.cfg.piperVoice=e.target.value;TTS.save();sizeOut();PIPER.ready=false;PIPER.cache.clear();
+      if(TTS.cfg.piper)await PIPER.prepare();
     };
     $("lr-start").onclick=()=>this.start();
     $("lr-stopbtn").onclick=()=>this.finish(true);
     $("lr-ttspause").onclick=()=>this.ttsToggle();
+    $("lr-ttsskip").onclick=()=>{if(this.ctrl)this.ctrl.skip()};
     $("lr-again").onclick=()=>this.start();
     $("lr-new").onclick=()=>this.show("setup");
-    if("speechSynthesis" in window){
-      speechSynthesis.onvoiceschanged=()=>this.fillVoices();
-      this.fillVoices();
-      // Safari liefert die volle Liste oft verspätet und feuert das Event nicht immer:
-      [400,1500,4000,8000].forEach(t=>setTimeout(()=>this.fillVoices(),t));
-    }
     this.applyMode();
   },
   save(){LS.set("lr_cfg",this.cfg)},
@@ -910,49 +1434,60 @@ const LR = {
     const tts=this.cfg.mode==="tts";
     $("lr-mode-self").classList.toggle("sel",!tts);
     $("lr-mode-tts").classList.toggle("sel",tts);
-    $("lr-raterow").hidden=!tts;
-    $("lr-voicerow").hidden=!tts;
+    $("lr-voicecard").hidden=!tts;
     $("lr-quizrow").hidden=!tts;
-    const n=$("lr-note");
+    const n=$("lr-note"),nv=$("lr-novoice");
+    n.textContent="";nv.hidden=true;
+    $("lr-start").disabled=false;
+    $("lr-pitch").disabled=TTS.usePiper();
     if(!tts&&!SR)n.textContent="Dieser Browser kann keine Spracherkennung – bitte „Vorlesen lassen“ wählen.";
-    else if(!tts)n.textContent="Die Erkennung ist nicht perfekt – rote Wörter am Schluss einfach gemeinsam anschauen.";
-    else if(!("speechSynthesis" in window))n.textContent="Dieser Browser kann leider nicht vorlesen.";
-    else n.textContent="";
+    else if(!tts)n.textContent="Die Erkennung ist nicht perfekt – rot markierte Wörter am Schluss einfach nochmal anschauen.";
+    else if(!HAS_TTS&&!TTS.usePiper()){
+      nv.hidden=false;nv.textContent="Dieser Browser kann leider nicht vorlesen. Versuch es in Chrome, Edge oder Safari – oder schalte unten die Offline-Stimme ein.";
+      $("lr-start").disabled=true;
+    }else if(!TTS.available()){
+      nv.hidden=false;
+      nv.innerHTML="<b>Keine deutsche Stimme gefunden.</b> "+this.voiceTip()+" Alternativ kannst du unten die Offline-Stimme einschalten.";
+      $("lr-start").disabled=true;
+    }
+    this.renderVoiceMeta();
   },
-  voiceScore(v){
-    const n=(v.name||"").toLowerCase();
-    let s=0;
-    if(/premium|enhanced|erweitert|natural|neural/.test(n))s+=50;
-    if(/siri/.test(n))s+=40;
-    if(/google/.test(n))s+=35;
-    if(/petra|anna|helena|markus|viktor|katja/.test(n))s+=20;
-    if(/microsoft/.test(n))s+=15;
-    if(/espeak|compact|eloquence|grandpa|grandma|zarvox|trinoids|albert/.test(n))s-=60;
-    if((v.lang||"").toLowerCase()==="de-at")s+=5;
-    return s;
+  voiceTip(){
+    const ua=navigator.userAgent;
+    if(/android/i.test(ua))return "Android: Einstellungen → System → Sprache → Sprachausgabe → Google-Sprachausgabe → Deutsch installieren, dann „Neu suchen“.";
+    if(/iphone|ipad/i.test(ua))return "iPhone/iPad: Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch laden, dann „Neu suchen“.";
+    if(/windows/i.test(ua))return "Windows: Einstellungen → Zeit und Sprache → Sprache → Deutsch hinzufügen (mit Sprachausgabe). In Edge gibt es danach die natürlichen „Online“-Stimmen.";
+    if(/mac os/i.test(ua))return "Mac: Systemeinstellungen → Bedienungshilfen → Gesprochene Inhalte → Systemstimme → Verwalten → Deutsch (Premium) laden.";
+    return "Installiere im System eine deutsche Stimme und tippe dann auf „Neu suchen“.";
   },
   fillVoices(){
     const sel=$("lr-voice");
-    const vs=speechSynthesis.getVoices()
-      .filter(v=>v.lang&&v.lang.toLowerCase().startsWith("de"))
-      .sort((a,b)=>this.voiceScore(b)-this.voiceScore(a));
-    dlog("TTS","Deutsche Stimmen ("+vs.length+"): "+(vs.map(v=>v.name).join(", ")||"keine"));
-    if(!vs.length){sel.innerHTML="<option value=''>Standard-Stimme</option>";return}
-    const sig=vs.map(v=>v.voiceURI).join("|");
-    if(sig===this._voiceSig)return;
-    this._voiceSig=sig;
-    sel.innerHTML=vs.map(v=>`<option value="${v.voiceURI}">${v.name}${v.name.includes("(")?"":" ("+v.lang+")"}</option>`).join("");
-    if(this.cfg.voice&&vs.some(v=>v.voiceURI===this.cfg.voice))sel.value=this.cfg.voice;
-    else{sel.value=vs[0].voiceURI;this.cfg.voice=vs[0].voiceURI;this.save()}
+    const vs=TTS.voices();
+    if(!vs.length){
+      sel.innerHTML="<option value='auto'>Keine deutsche Stimme gefunden</option>";sel.value="auto";this.renderVoiceMeta();return;
+    }
+    const best=TTS.best();
+    let html=`<option value="auto">Automatisch – beste Stimme (${esc(best.name)})</option>`;
+    const groups=[[3,"Natürliche Stimmen"],[2,"Gute Stimmen"],[1,"Standard-Stimmen"],[0,"Einfache Stimmen"]];
+    for(const [t,label] of groups){
+      const g=vs.filter(v=>TTS.tier(v)===t);
+      if(!g.length)continue;
+      html+=`<optgroup label="${label}">`+g.map(v=>`<option value="${esc(v.voiceURI)}">${esc(v.name)}${/\(/.test(v.name)?"":" ("+esc(v.lang)+")"}</option>`).join("")+"</optgroup>";
+    }
+    sel.innerHTML=html;
+    sel.value=(TTS.cfg.voice&&vs.some(v=>v.voiceURI===TTS.cfg.voice))?TTS.cfg.voice:"auto";
+    if(sel.value==="auto"&&TTS.cfg.voice!=="auto"){TTS.cfg.voice="auto";TTS.save()}
+    this.renderVoiceMeta();
   },
-  testVoice(){
-    if(!("speechSynthesis" in window))return;
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance("Hallo! So klinge ich, wenn ich dir vorlese.");
-    u.lang="de-DE";u.rate=this.cfg.rate;
-    const v=speechSynthesis.getVoices().find(x=>x.voiceURI===this.cfg.voice);
-    if(v)u.voice=v;
-    speechSynthesis.speak(u);
+  renderVoiceMeta(){
+    const m=$("lr-voicemeta");
+    if(TTS.usePiper()){m.innerHTML=`<span class="tag nat">Offline-Stimme aktiv</span><span class="tag">${esc((PIPER.VOICES.find(v=>v.id===TTS.cfg.piperVoice)||{}).label||TTS.cfg.piperVoice)}</span>`;return}
+    const v=TTS.pick();
+    if(!v){m.innerHTML="";return}
+    const t=TTS.tier(v);
+    m.innerHTML=`<span class="tag ${t===3?"nat":t===2?"gut":""}">${TTS.tierLabel(t)}</span><span class="tag">${esc(v.lang)}</span>`
+      +(v.localService?`<span class="tag">offline</span>`:`<span class="tag">online</span>`)
+      +(TTS.voices().length?`<span class="tag">${TTS.voices().length} deutsche Stimmen</span>`:"");
   },
   show(s){["setup","run","done"].forEach(x=>$("lr-"+x).hidden=s!==x);
     $("lr-quizbox").hidden=true;window.scrollTo({top:0,behavior:"smooth"})},
@@ -1002,19 +1537,21 @@ const LR = {
     }
     this.mode=this.cfg.mode;this.finished=false;this.running=true;
     this.committed=[];this.quizAsked=new Set();this.quizRight=0;this.quizTotal=0;
-    this.curPara=0;this.pointer=0;this.lastStatus=null;this.t0=null;this.ttsPaused=false;
+    this.curPara=0;this.pointer=0;this.lastStatus=null;this.t0=null;
     this.paused=false;this.everRes=0;this.sessCount=0;this.compat=IS_SAFARI;
     $("lr-timer").textContent="0:00";
     $("lr-quizbox").hidden=true;
+    $("lr-heard").textContent="";
     this.show("run");
     if(this.mode==="self"){
       if(!SR){this.running=false;this.show("setup");this.applyMode();return}
-      $("lr-ttspause").hidden=true;
+      $("lr-ttsctrls").hidden=true;
       $("lr-status").textContent="🎤 Lies laut – ich höre zu!";
       this.startRec();
     }else{
-      if(!("speechSynthesis" in window)){this.running=false;this.show("setup");this.applyMode();return}
-      $("lr-ttspause").hidden=false;$("lr-ttspause").textContent="⏸ Pause";
+      if(!TTS.available()){this.running=false;this.show("setup");this.applyMode();return}
+      if(TTS.usePiper())PIPER.unlock();
+      $("lr-ttsctrls").hidden=false;$("lr-ttspause").textContent="⏸ Pause";
       $("lr-status").textContent="🔊 Hör zu und lies leise mit";
       this.speakPara(0);
     }
@@ -1083,7 +1620,7 @@ const LR = {
         this.committed=this.committed.concat(fin);
         const hd=$("lr-heard");
         if(hd)hd.textContent="Gehört: „"+rec._final.trim().split(/\s+/).slice(-6).join(" ")+"“";
-        this.align(this.committed);   // Safari liefert erst am Session-Ende -> jetzt einfaerben
+        this.align(this.committed);   // Safari liefert erst am Session-Ende -> jetzt einfärben
       }
       if(!this.everRes&&this.sessCount>=2&&!this.compat)this.compat=true;
       if(!fin.length&&Date.now()-rec._t0<1500&&rec._err){
@@ -1091,7 +1628,7 @@ const LR = {
         if(this.fastFails>=6){
           dlog("LR","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
           this.running=false;
-          $("lr-status").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Datei in Chrome öffnen.";
+          $("lr-status").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Seite in Chrome öffnen.";
           return;
         }
       }
@@ -1141,73 +1678,45 @@ const LR = {
     if(i>=F.length)this.finish(false);   // beim Selberlesen keine Fragen
   },
 
-  /* ── Vorlesen (TTS) ── */
+  /* ── Vorlesen (TTS, satzweise) ── */
+  markWord(gi){
+    this.flat.forEach((w,j)=>w.el.classList.toggle("cur",j===gi));
+    const el=this.flat[gi];
+    if(el)el.el.scrollIntoView({block:"center",behavior:"smooth"});
+  },
   speakPara(q){
     if(!this.running)return;
     if(q>=this.paras.length){this.finish(false);return}
     this.curPara=q;this.startTimer();
     const startIdx=q===0?0:this.paraEnd[q-1];
-    const words=this.paras[q];
-    // In Satz-Happen zerlegen: lange Utterances sterben in Chrome/Android sonst stumm ab
-    const chunks=[];let cw=[],cLen=0,cOff=0;
-    const flushChunk=()=>{if(cw.length){chunks.push({words:cw,off:cOff});cOff+=cw.length;cw=[];cLen=0}};
-    words.forEach(w=>{
-      cw.push(w);cLen+=w.length+1;
-      if((/[.!?\u2026]["\u00bb\u00ab')\]]?$/.test(w)&&cLen>40)||cLen>180||cw.length>=28)flushChunk();
-    });
-    flushChunk();
-    const v=speechSynthesis.getVoices().find(x=>x.voiceURI===this.cfg.voice);
-    const speakChunk=ci=>{
-      if(!this.running)return;
-      if(ci>=chunks.length){
+    const sents=TTS.sentences(this.paras[q],startIdx);
+    if(TTS.usePiper())PIPER.prefetch(sents,0);
+    this.ctrl=TTS.speak(sents,{
+      onSentence:(i)=>{if(TTS.usePiper())PIPER.prefetch(sents,i+1)},
+      onWord:gi=>{if(this.running)this.markWord(gi)},
+      onSentenceDone:(i,s)=>{s.words.forEach(w=>{this.flat[w.idx].el.className="w ok"})},
+      onPause:()=>{$("lr-status").textContent="⏸ Pause – tipp auf „Weiter“"},
+      onResume:()=>{$("lr-status").textContent="🔊 Hör zu und lies leise mit"},
+      onError:e=>{$("lr-status").textContent="⚠️ Vorlesen gestört ("+e+") – ich versuche weiterzumachen."},
+      onDone:()=>{
+        if(!this.running)return;
         for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
         if(this.cfg.quiz&&!this.quizAsked.has(q)){
           this.quizAsked.add(q);
-          $("lr-status").textContent="\ud83e\udde0 Kleine Frage!";
+          $("lr-status").textContent="🧠 Kleine Frage!";
           this.askQuiz(q,()=>{
-            $("lr-status").textContent="\ud83d\udd0a Weiter geht's";
+            $("lr-status").textContent="🔊 Weiter geht's";
             this.speakPara(q+1);
           });
         }else this.speakPara(q+1);
-        return;
-      }
-      const ch=chunks[ci];
-      let text="";const offs=[];
-      ch.words.forEach((w,i)=>{offs.push(text.length);text+=w+(i<ch.words.length-1?" ":"")});
-      // Woerter vor diesem Happen als gelesen markieren
-      for(let j=startIdx;j<startIdx+ch.off;j++)this.flat[j].el.className="w ok";
-      const u=new SpeechSynthesisUtterance(text);
-      u.lang="de-DE";u.rate=this.cfg.rate;if(v)u.voice=v;
-      let wd=null,done=false;
-      const finish=()=>{if(done)return;done=true;clearTimeout(wd);speakChunk(ci+1)};
-      const guard=()=>{
-        if(!this.running||done)return;
-        if(this.ttsPaused){wd=setTimeout(guard,3000);return}
-        dlog("TTS","Watchdog: Happen h\u00e4ngt \u2192 weiter mit n\u00e4chstem");
-        try{speechSynthesis.cancel()}catch(e){}
-        finish();
-      };
-      u.onboundary=e=>{
-        if(e.name&&e.name!=="word")return;
-        clearTimeout(wd);wd=setTimeout(guard,9000);
-        let wi=0;
-        for(let i=0;i<offs.length;i++){if(e.charIndex>=offs[i])wi=i;else break}
-        const gi=startIdx+ch.off+wi;
-        this.flat.forEach((w,j)=>w.el.classList.toggle("cur",j===gi));
-        const el=this.flat[gi];
-        if(el)el.el.scrollIntoView({block:"center",behavior:"smooth"});
-      };
-      u.onend=finish;
-      u.onerror=ev=>{dlog("TTS","Utterance-Fehler: "+(ev.error||"?"));finish()};
-      const est=Math.max(5000,text.length*130/this.cfg.rate);
-      wd=setTimeout(guard,est+5000);
-      speechSynthesis.speak(u);
-    };
-    speakChunk(0);
+      },
+    });
+    this.ctrl._sents=sents;
   },
   ttsToggle(){
-    if(this.ttsPaused){speechSynthesis.resume();this.ttsPaused=false;$("lr-ttspause").textContent="⏸ Pause"}
-    else{speechSynthesis.pause();this.ttsPaused=true;$("lr-ttspause").textContent="▶ Weiter"}
+    if(!this.ctrl)return;
+    if(this.ctrl.paused){this.ctrl.resume();$("lr-ttspause").textContent="⏸ Pause"}
+    else{this.ctrl.pause();$("lr-ttspause").textContent="▶ Weiter"}
   },
 
   /* ── Quiz: Lückentext-Frage pro Absatz ── */
@@ -1227,7 +1736,7 @@ const LR = {
       if(!blanked&&clean(w).toLowerCase()===target.toLowerCase()){blanked=true;return "_____"}
       return w;
     }).join(" ");
-    $("lr-q").innerHTML="Welches Wort fehlt?<br><span style='color:var(--dim);font-size:16px'>„"+paraText+"“</span>";
+    $("lr-q").innerHTML="Welches Wort fehlt?<br><span class='small' style='font-weight:500;font-size:16px'>„"+esc(paraText)+"“</span>";
     $("lr-qfeed").textContent="";
     this.quizTotal++;
     let first=true;
@@ -1237,12 +1746,12 @@ const LR = {
       b.onclick=()=>{
         if(norm(o)===norm(target)){
           b.classList.add("right");
-          $("lr-qfeed").textContent="Richtig! 🎉";
+          $("lr-qfeed").textContent=first?"Richtig! 🎉":"Genau – jetzt stimmt's.";
           if(first)this.quizRight++;
           setTimeout(()=>{box.hidden=true;cb()},900);
         }else{
           b.classList.add("wrong");first=false;
-          $("lr-qfeed").textContent="Probier's nochmal!";
+          $("lr-qfeed").textContent="Nicht ganz – probier's nochmal.";
         }
       };
       od.appendChild(b);
@@ -1254,13 +1763,21 @@ const LR = {
     if(this.finished&&!this.running)return;
     this.finished=true;this.running=false;
     this.stopRec();
-    if("speechSynthesis" in window)speechSynthesis.cancel();
+    if(this.ctrl){this.ctrl.stop();this.ctrl=null}
+    if(HAS_TTS)speechSynthesis.cancel();
     clearInterval(this.tInt);this.tInt=null;
     const st=this.lastStatus||[];
     const ok=st.filter(x=>x===1).length;
     const bad=[...new Set(this.flat.filter((w,j)=>st[j]===2).map(w=>w.raw))];
     const secs=this.t0?Math.round((Date.now()-this.t0)/1000):0;
-    $("lr-head").textContent=manual?"Beendet":"Geschafft!";
+    if(!manual)STATS.add();
+    let frac,lbl,sub,gold=false;
+    if(this.mode==="self"){frac=this.flat.length?ok/this.flat.length:0;lbl=Math.round(frac*100)+"%";sub="richtig gelesen";gold=frac>=0.95}
+    else if(this.quizTotal){frac=this.quizRight/this.quizTotal;lbl=this.quizRight+"/"+this.quizTotal;sub="Fragen";gold=frac===1}
+    else{frac=manual?0.5:1;lbl=Math.floor(secs/60)+":"+String(secs%60).padStart(2,"0");sub="Minuten";gold=!manual}
+    ring($("lr-ring"),frac,lbl,sub,gold);
+    $("lr-head").textContent=manual?"Beendet":gold?"Super gelesen!":"Geschafft!";
+    $("lr-sub").textContent=manual?"Du kannst jederzeit weitermachen.":this.mode==="self"?(bad.length?"Ein paar Wörter lohnen sich zum Nochmal-Üben.":"Flüssig und sicher – klasse."):"Den Text hast du mitverfolgt – gut gemacht.";
     let html=`<div class="statline"><span>Zeit</span><b>${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")} min</b></div>`;
     if(this.mode==="self"){
       html+=`<div class="statline"><span>Richtig gelesen</span><b>${ok} von ${this.flat.length} Wörtern</b></div>`;
@@ -1272,22 +1789,24 @@ const LR = {
     if(this.mode==="self"&&bad.length){
       rw.hidden=false;
       rw.innerHTML=`<div class="cardtitle">Diese Wörter nochmal üben</div>
-        <div style="font-size:18px;line-height:1.8;color:var(--retry)">${bad.join(" · ")}</div>
-        <div class="hint">Tipp: Genau diese Wörter bei ⚡ Blitz als „Eigene Wörter“ eintragen!</div>`;
+        <div style="font:500 19px/1.8 var(--read);color:var(--warn)">${bad.map(esc).join(" · ")}</div>
+        <div class="hint">Tipp: Genau diese Wörter bei ⚡ Blitz als „Eigene Wörter“ eintragen.</div>`;
     }else rw.hidden=true;
     this.show("done");
+    if(gold&&!manual)confetti($("lr-confetti"));
   },
   stopAll(){
     this.running=false;this.finished=true;
     this.stopRec();
-    if("speechSynthesis" in window)speechSynthesis.cancel();
+    if(this.ctrl){this.ctrl.stop();this.ctrl=null}
+    if(HAS_TTS)speechSynthesis.cancel();
     clearInterval(this.tInt);this.tInt=null;
   },
 };
 LR.init();
 
 dlog("SYS","App geladen | "+navigator.userAgent);
-dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | Protokoll: "+location.protocol);
+dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | SpeechSynthesis: "+(HAS_TTS?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | Protokoll: "+location.protocol);
 
 /* letzten Tab wiederherstellen */
 showTab(LS.get("tab","blitz"));
