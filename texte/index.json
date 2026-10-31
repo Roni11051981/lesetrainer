@@ -1,0 +1,263 @@
+[
+ {
+  "id": "bremer-stadtmusikanten",
+  "titel": "Die Bremer Stadtmusikanten",
+  "art": "Märchen",
+  "quelle": "nach den Brüdern Grimm, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 239,
+  "datei": "bremer-stadtmusikanten.txt"
+ },
+ {
+  "id": "suesser-brei",
+  "titel": "Der süße Brei",
+  "art": "Märchen",
+  "quelle": "nach den Brüdern Grimm, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 200,
+  "datei": "suesser-brei.txt"
+ },
+ {
+  "id": "sterntaler",
+  "titel": "Die Sterntaler",
+  "art": "Märchen",
+  "quelle": "nach den Brüdern Grimm, nacherzählt",
+  "alter": "ab 9",
+  "woerter": 193,
+  "datei": "sterntaler.txt"
+ },
+ {
+  "id": "hase-und-igel",
+  "titel": "Der Hase und der Igel",
+  "art": "Märchen",
+  "quelle": "nach den Brüdern Grimm, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 210,
+  "datei": "hase-und-igel.txt"
+ },
+ {
+  "id": "tapferes-schneiderlein",
+  "titel": "Das tapfere Schneiderlein",
+  "art": "Märchen",
+  "quelle": "nach den Brüdern Grimm, nacherzählt (Anfang)",
+  "alter": "ab 10",
+  "woerter": 215,
+  "datei": "tapferes-schneiderlein.txt"
+ },
+ {
+  "id": "kaisers-neue-kleider",
+  "titel": "Des Kaisers neue Kleider",
+  "art": "Märchen",
+  "quelle": "nach Hans Christian Andersen, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 205,
+  "datei": "kaisers-neue-kleider.txt"
+ },
+ {
+  "id": "kleiner-muck",
+  "titel": "Der kleine Muck",
+  "art": "Märchen",
+  "quelle": "nach Wilhelm Hauff, nacherzählt (Anfang)",
+  "alter": "ab 10",
+  "woerter": 213,
+  "datei": "kleiner-muck.txt"
+ },
+ {
+  "id": "rattenfaenger",
+  "titel": "Der Rattenfänger von Hameln",
+  "art": "Sage",
+  "quelle": "deutsche Sage, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 198,
+  "datei": "rattenfaenger.txt"
+ },
+ {
+  "id": "eulenspiegel-baecker",
+  "titel": "Till Eulenspiegel beim Bäcker",
+  "art": "Schelmengeschichte",
+  "quelle": "nach dem Volksbuch von Till Eulenspiegel, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 189,
+  "datei": "eulenspiegel-baecker.txt"
+ },
+ {
+  "id": "muenchhausen-kugel",
+  "titel": "Münchhausen reitet auf der Kanonenkugel",
+  "art": "Lügengeschichte",
+  "quelle": "nach den Abenteuern des Baron Münchhausen, nacherzählt",
+  "alter": "ab 10",
+  "woerter": 176,
+  "datei": "muenchhausen-kugel.txt"
+ },
+ {
+  "id": "odysseus-zyklop",
+  "titel": "Odysseus und der Zyklop",
+  "art": "Sage",
+  "quelle": "aus der griechischen Sagenwelt, nacherzählt",
+  "alter": "ab 11",
+  "woerter": 208,
+  "datei": "odysseus-zyklop.txt"
+ },
+ {
+  "id": "rabe-und-fuchs",
+  "titel": "Der Rabe und der Fuchs",
+  "art": "Fabel",
+  "quelle": "nach Äsop, nacherzählt",
+  "alter": "ab 9",
+  "woerter": 175,
+  "datei": "rabe-und-fuchs.txt"
+ },
+ {
+  "id": "loewe-und-maus",
+  "titel": "Der Löwe und die Maus",
+  "art": "Fabel",
+  "quelle": "nach Äsop, nacherzählt",
+  "alter": "ab 9",
+  "woerter": 174,
+  "datei": "loewe-und-maus.txt"
+ },
+ {
+  "id": "stadtmaus-landmaus",
+  "titel": "Die Stadtmaus und die Landmaus",
+  "art": "Fabel",
+  "quelle": "nach Äsop, nacherzählt",
+  "alter": "ab 9",
+  "woerter": 178,
+  "datei": "stadtmaus-landmaus.txt"
+ },
+ {
+  "id": "nils-holgersson",
+  "titel": "Nils Holgersson wird klein",
+  "art": "Abenteuer",
+  "quelle": "nach Selma Lagerlöf, nacherzählt (Anfang)",
+  "alter": "ab 11",
+  "woerter": 213,
+  "datei": "nils-holgersson.txt"
+ },
+ {
+  "id": "robinson-fussspur",
+  "titel": "Robinson findet eine Fußspur",
+  "art": "Abenteuer",
+  "quelle": "nach Daniel Defoe, nacherzählt (Ausschnitt)",
+  "alter": "ab 11",
+  "woerter": 195,
+  "datei": "robinson-fussspur.txt"
+ },
+ {
+  "id": "tom-sawyer-zaun",
+  "titel": "Tom Sawyer streicht den Zaun",
+  "art": "Abenteuer",
+  "quelle": "nach Mark Twain, nacherzählt (Ausschnitt)",
+  "alter": "ab 11",
+  "woerter": 201,
+  "datei": "tom-sawyer-zaun.txt"
+ },
+ {
+  "id": "regenbogen",
+  "titel": "Wie entsteht ein Regenbogen?",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 189,
+  "datei": "regenbogen.txt"
+ },
+ {
+  "id": "bienen",
+  "titel": "Wie Bienen miteinander reden",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 172,
+  "datei": "bienen.txt"
+ },
+ {
+  "id": "vulkane",
+  "titel": "Warum Vulkane ausbrechen",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 199,
+  "datei": "vulkane.txt"
+ },
+ {
+  "id": "blauwal",
+  "titel": "Der Blauwal – das größte Tier der Erde",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 199,
+  "datei": "blauwal.txt"
+ },
+ {
+  "id": "mond",
+  "titel": "Warum der Mond seine Form verändert",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 207,
+  "datei": "mond.txt"
+ },
+ {
+  "id": "gehirn-lesen",
+  "titel": "Was im Kopf passiert, wenn du liest",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 11",
+  "woerter": 192,
+  "datei": "gehirn-lesen.txt"
+ },
+ {
+  "id": "buchdruck",
+  "titel": "Die Erfindung des Buchdrucks",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 11",
+  "woerter": 181,
+  "datei": "buchdruck.txt"
+ },
+ {
+  "id": "pinguine",
+  "titel": "Kaiserpinguine im Winter",
+  "art": "Sachtext",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 201,
+  "datei": "pinguine.txt"
+ },
+ {
+  "id": "funki",
+  "titel": "Der kleine Drache Funki",
+  "art": "Geschichte",
+  "quelle": "eigener Text",
+  "alter": "ab 9",
+  "woerter": 149,
+  "datei": "funki.txt"
+ },
+ {
+  "id": "tag-ohne-strom",
+  "titel": "Ein Tag ohne Strom",
+  "art": "Geschichte",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 195,
+  "datei": "tag-ohne-strom.txt"
+ },
+ {
+  "id": "baumhaus-geheimnis",
+  "titel": "Das Geheimnis im Baumhaus",
+  "art": "Geschichte",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 206,
+  "datei": "baumhaus-geheimnis.txt"
+ },
+ {
+  "id": "fahrradtour",
+  "titel": "Die Fahrradtour",
+  "art": "Geschichte",
+  "quelle": "eigener Text",
+  "alter": "ab 10",
+  "woerter": 176,
+  "datei": "fahrradtour.txt"
+ }
+]
