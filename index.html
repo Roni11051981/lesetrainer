@@ -549,6 +549,21 @@ Da hat Funki eine Idee. Er holt tief Luft und pustet seine dicken Rauchwolken ü
 Seit diesem Tag lacht niemand mehr über Funki. Denn jetzt wissen alle: Jeder kann etwas Besonderes, auch wenn es zuerst wie ein Fehler aussieht. Und Funki ist mächtig stolz auf seine Rauchwölkchen.`;
 const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
 const IS_SAFARI = /safari/i.test(navigator.userAgent)&&!/chrome|chromium|crios|edg|android/i.test(navigator.userAgent);
+const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const IS_STANDALONE = window.navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;
+/* Hinweis, wenn das System die Spracherkennung blockiert (Diktat aus, falsche Sprache, Home-Bildschirm-App) */
+function micSystemTip(){
+  if(IS_IOS)return "iPhone/iPad: Einstellungen → Allgemein → Tastatur → „Diktieren“ einschalten und unter „Diktiersprachen“ Deutsch hinzufügen. Die Seite direkt in Safari öffnen (nicht als Home-Bildschirm-App) und beim ersten Mal Mikrofon und Spracherkennung erlauben.";
+  if(/mac os/i.test(navigator.userAgent))return "Mac: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Seite in Chrome öffnen.";
+  if(/android/i.test(navigator.userAgent))return "Android: Bitte Chrome verwenden und das Mikrofon für diese Seite erlauben (Schloss-Symbol in der Adressleiste).";
+  return "Mikrofon für diese Seite erlauben (Schloss-Symbol in der Adressleiste) – am zuverlässigsten in Chrome oder Edge.";
+}
+/* Erkennung einmal direkt in der Nutzergeste anstoßen: iOS zeigt die Berechtigungsfrage nur dann zuverlässig */
+function micPrime(){
+  if(!SR)return;
+  try{const r=new SR();r.lang="de-DE";r.onerror=()=>{};r.onend=()=>{};r.start();setTimeout(()=>{try{r.abort()}catch(e){}},400);dlog("SYS","Mikro-Vorab-Anfrage gesendet")}
+  catch(e){dlog("SYS","Mikro-Vorab-Anfrage FEHLER: "+e.message)}
+}
 
 const norm = s=>s.toLowerCase().replace(/[^a-zäöüß0-9]/g,"").trim();
 const NUM = {"0":"null","1":"eins","2":"zwei","3":"drei","4":"vier","5":"fünf","6":"sechs","7":"sieben","8":"acht","9":"neun","10":"zehn","11":"elf","12":"zwölf"};
@@ -592,7 +607,9 @@ const BW = {
 
   initUI(){
     if(!SR){this.cfg.mic=false;$("bw-micnote").hidden=false;
-      $("bw-micnote").textContent="Dieser Browser kann keine Spracherkennung – Tipp-Modus ist aktiv.";}
+      $("bw-micnote").textContent=IS_IOS&&IS_STANDALONE
+        ?"Als Home-Bildschirm-App kann das iPhone hier nicht zuhören – bitte die Seite direkt in Safari öffnen. Tipp-Modus ist aktiv."
+        :"Dieser Browser kann keine Spracherkennung – Tipp-Modus ist aktiv.";}
     $("bw-mode-mic").onclick=()=>{if(SR){this.cfg.mic=true;this.saveCfg()}};
     $("bw-mode-tap").onclick=()=>{this.cfg.mic=false;this.saveCfg()};
     const lv=$("bw-levels");lv.innerHTML="";
@@ -611,7 +628,7 @@ const BW = {
       b.innerHTML=`<span class="ico">${s.emoji}</span>${s.label}<span class="small">${(s.ms/1000).toFixed(1)} s</span>`;
       b.onclick=()=>{this.cfg.speed=i;this.saveCfg()};b.dataset.speed=i;sp.appendChild(b);
     });
-    $("bw-start").onclick=()=>this.startRound();
+    $("bw-start").onclick=()=>{if(this.useMic()&&!this.primed){this.primed=true;micPrime()}this.startRound()};
     $("bw-abort").onclick=()=>this.abort();
     $("bw-again").onclick=()=>this.startRound();
     $("bw-back").onclick=()=>this.show("setup");
@@ -758,7 +775,7 @@ const BW = {
           dlog("BW","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
           this.micBlocked=true;
           $("bw-micnote").hidden=false;
-          $("bw-micnote").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Seite in Chrome öffnen.";
+          $("bw-micnote").textContent="⚠️ Das System blockiert die Spracherkennung. "+micSystemTip();
           clearTimeout(this.listenTimer);
           this.reveal();
           return;
@@ -789,6 +806,11 @@ const BW = {
   },
   reveal(){
     this.stopRec();this.clearTimers();
+    if(this.useMic()&&!this.heardFinal.trim()){
+      this.silentRounds=(this.silentRounds||0)+1;
+      if(this.silentRounds===3){$("bw-micnote").hidden=false;
+        $("bw-micnote").textContent="Ich habe dreimal nichts verstanden. "+micSystemTip()}
+    }else this.silentRounds=0;
     this.stage(`<div class="center" style="padding:16px;width:100%">
       <div class="bigword ${this.cur.length>10?"long":""}" style="color:var(--accent-strong);margin-bottom:20px">${esc(this.cur)}</div>
       <div class="row">
@@ -1487,8 +1509,8 @@ const LR = {
     n.textContent="";nv.hidden=true;
     $("lr-start").disabled=false;
     $("lr-pitch").disabled=TTS.usePiper();
-    if(!tts&&!SR)n.textContent="Dieser Browser kann keine Spracherkennung – bitte „Vorlesen lassen“ wählen.";
-    else if(!tts)n.textContent="Die Erkennung ist nicht perfekt – rot markierte Wörter am Schluss einfach nochmal anschauen.";
+    if(!tts&&!SR)n.textContent=IS_IOS&&IS_STANDALONE?"Als Home-Bildschirm-App kann das iPhone nicht zuhören – bitte die Seite direkt in Safari öffnen oder „Vorlesen lassen“ wählen.":"Dieser Browser kann keine Spracherkennung – bitte „Vorlesen lassen“ wählen.";
+    else if(!tts)n.textContent=IS_IOS?"Auf dem iPhone kommt das Gehörte oft erst nach einer kurzen Sprechpause an – satzweise lesen, kurz warten. Rot markierte Wörter am Schluss einfach nochmal anschauen.":"Die Erkennung ist nicht perfekt – rot markierte Wörter am Schluss einfach nochmal anschauen.";
     else if(!HAS_TTS&&!TTS.usePiper()){
       nv.hidden=false;nv.textContent="Dieser Browser kann leider nicht vorlesen. Versuch es in Chrome, Edge oder Safari – oder schalte unten die Offline-Stimme ein.";
       $("lr-start").disabled=true;
@@ -1691,12 +1713,12 @@ const LR = {
         if(this.fastFails>=6){
           dlog("LR","Abbruch: System blockiert Erkennung ("+this.fastFails+" Fehlversuche)");
           this.running=false;
-          $("lr-status").textContent="⚠️ macOS blockiert die Spracherkennung (Diktat-Dienst aus). Lösung: Systemeinstellungen → Tastatur → Diktat einschalten, Safari neu starten – oder die Seite in Chrome öffnen.";
+          $("lr-status").textContent="⚠️ Das System blockiert die Spracherkennung. "+micSystemTip();
           return;
         }
       }
       if(!this.everRes&&this.sessCount>=5&&!rec._err)
-        $("lr-status").textContent="⚠️ Ich verstehe nichts – richtiges Mikrofon gewählt? (Safari → Einstellungen für diese Website → Mikrofon)";
+        $("lr-status").textContent="⚠️ Ich verstehe nichts. "+micSystemTip();
       if(this.running&&!this.finished&&!this.paused)
         setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec)this.startRec()},250);
     };
@@ -1870,7 +1892,7 @@ const LR = {
 LR.init();
 
 dlog("SYS","App geladen | "+navigator.userAgent);
-dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | SpeechSynthesis: "+(HAS_TTS?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | Protokoll: "+location.protocol);
+dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | SpeechSynthesis: "+(HAS_TTS?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | iOS: "+(IS_IOS?"JA":"nein")+" | Standalone: "+(IS_STANDALONE?"JA":"nein")+" | Protokoll: "+location.protocol);
 
 /* letzten Tab wiederherstellen */
 showTab(LS.get("tab","blitz"));
