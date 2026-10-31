@@ -13,4 +13,9 @@ Statische Web-App für Kinder ab ca. 10 Jahren (läuft auf GitHub Pages, kein Se
 - Vorgelesen wird satzweise mit Pause/Weiter/Nächster Satz/Stopp; das aktuelle Wort wird im Text markiert.
 - **Offline-Stimme (Beta):** optional zuschaltbare Piper-Neuralstimme per WebAssembly (`@mintplex-labs/piper-tts-web`, Modell wird einmal geladen und wiederverwendet), läuft in einem Web Worker. Wird erst beim Einschalten geladen (Eva 21 MB, Thorsten/Kerstin 63 MB, plus ca. 30 MB Laufzeit; danach im Browser gespeichert).
 
-Alles liegt in `index.html`; Einstellungen, Verlauf und Texte bleiben im `localStorage`.
+## Bibliothek
+
+- `texte/` enthält den mitgelieferten Textbestand (Märchen, Sagen, Fabeln, Abenteuer, Sachtexte, Geschichten; 120–250 Wörter, CC0 – eigene Nacherzählungen gemeinfreier Stoffe und eigene Texte, siehe `texte/LIZENZ.md`). Neue Texte: `.txt` ablegen und in `texte/index.json` eintragen.
+- **Klexikon-Suche** (optional, braucht Internet): holt den Anfang eines Artikels aus dem freien Kinderlexikon klexikon.zum.de über die MediaWiki-API (anonym, `origin=*`). Quelle und Lizenz (CC BY-SA 4.0) werden angezeigt. Ist der Server nicht erreichbar, erscheint ein Hinweis; die mitgelieferten Texte funktionieren auch offline.
+
+Die App besteht aus `index.html` und dem Ordner `texte/`; Einstellungen, Verlauf und Texte bleiben im `localStorage`.

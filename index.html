@@ -198,6 +198,23 @@
   details.more summary::before{content:"▸";margin-right:8px;transition:transform .2s}
   details.more[open] summary::before{transform:rotate(90deg)}
 
+  /* ── Bibliothek (Overlay) ── */
+  .sheet{position:fixed;inset:0;background:rgba(21,48,58,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+  .sheet-box{background:var(--bg);width:100%;max-width:560px;max-height:90vh;overflow:auto;border-radius:24px 24px 0 0;
+    padding:14px 16px calc(24px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg);animation:up .3s var(--ease)}
+  @media (min-width:700px){.sheet{align-items:center}.sheet-box{border-radius:24px;max-height:84vh}}
+  @keyframes fade{from{opacity:0}to{opacity:1}} @keyframes up{from{transform:translateY(30px)}to{transform:none}}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+  .chip{border:2px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;min-height:40px;padding:6px 14px;font:700 14px var(--ui);cursor:pointer}
+  .chip.sel{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong)}
+  .bibitem{display:block;width:100%;text-align:left;background:var(--surface);border:2px solid transparent;border-radius:14px;padding:12px 14px;margin-bottom:8px;
+    cursor:pointer;box-shadow:var(--shadow);font:700 16px var(--ui);color:var(--ink);transition:border-color .2s}
+  .bibitem:active{border-color:var(--accent)}
+  .bibitem .small{display:block;margin-top:3px}
+  .bibitem.loading{opacity:.6}
+  input[type=search]{flex:1;min-width:0;min-height:48px;border-radius:var(--radius-sm);border:2px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;font:600 16px var(--ui)}
+  input[type=search]:focus{border-color:var(--accent);outline:none}
+  .source{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.4}
   footer{margin-top:28px;text-align:center;font-size:13px;color:var(--muted)}
   footer button{background:none;border:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:600 13px var(--ui);min-height:40px}
   #dbgpanel{position:fixed;left:0;right:0;bottom:0;max-height:34vh;overflow:auto;background:#0E1A1F;color:#9FE08A;
@@ -287,6 +304,7 @@
       <input type="file" id="rs-file" class="srconly" accept=".txt,.epub,text/plain,application/epub+zip">
       <textarea id="rs-paste" rows="5" hidden placeholder="Text hier einfügen …" style="margin-top:10px"></textarea>
       <button class="btn full" id="rs-usepaste" hidden style="margin-top:8px">Diesen Text lesen</button>
+      <button class="btn sec full" id="rs-bib" style="margin-top:8px">📚 Bibliothek – Text aussuchen</button>
       <div class="hint" id="rs-fileinfo"></div>
     </div>
 
@@ -326,7 +344,12 @@
     <div id="lr-setup">
       <div class="card">
         <div class="cardtitle">Text für heute</div>
-        <textarea id="lr-text-in" rows="7" placeholder="Kurzen Text einfügen (ideal: 100–150 Wörter). Absätze mit Leerzeile trennen – nach jedem Absatz kommt eine Frage."></textarea>
+        <textarea id="lr-text-in" rows="7" placeholder="Kurzen Text einfügen (ideal: 100–250 Wörter). Absätze mit Leerzeile trennen – nach jedem Absatz kommt eine Frage."></textarea>
+        <div class="source" id="lr-source" hidden></div>
+        <div class="grid2" style="margin-top:10px">
+          <button class="btn sec" id="lr-bib">📚 Bibliothek</button>
+          <button class="btn sec" id="lr-clear">✕ Text leeren</button>
+        </div>
         <div class="grid2" style="margin-top:12px">
           <button class="choice" id="lr-mode-self"><span class="ico">🎤</span>Selber lesen<span class="small">Mikro hört mit</span></button>
           <button class="choice" id="lr-mode-tts"><span class="ico">🔊</span>Vorlesen lassen<span class="small">Stimme liest, du liest mit</span></button>
@@ -406,6 +429,28 @@
   </div>
 
   <footer>Lese-Trainer · läuft komplett in deinem Browser · <button id="dbgtoggle">Diagnose</button></footer>
+</div>
+
+<!-- ═══ BIBLIOTHEK ═══ -->
+<div id="bib" class="sheet" hidden role="dialog" aria-label="Bibliothek">
+  <div class="sheet-box">
+    <div class="between">
+      <div class="cardtitle" style="margin:0">📚 Bibliothek</div>
+      <button class="btn ghost" id="bib-close" style="min-height:44px">✕ Schließen</button>
+    </div>
+    <p class="hint" style="margin:6px 0 0">Tipp auf einen Text – er landet direkt zum Lesen in der App.</p>
+    <div class="chips" id="bib-filter"></div>
+    <div id="bib-list"><div class="hint">Lade Bibliothek …</div></div>
+    <details class="more" id="bib-klexbox">
+      <summary>🔎 Klexikon durchsuchen (braucht Internet)</summary>
+      <div class="hint" style="margin-top:0">Klexikon ist ein freies Lexikon für Kinder mit Tausenden Artikeln (klexikon.zum.de, Lizenz CC BY-SA 4.0). Die App holt den Anfang eines Artikels als Lesetext.</div>
+      <form class="row" id="bib-form" style="flex-wrap:nowrap;margin-top:8px">
+        <input type="search" id="bib-q" placeholder="Wovon soll der Text handeln?" autocomplete="off">
+        <button class="btn" type="submit" style="min-width:100px">Suchen</button>
+      </form>
+      <div id="bib-klex" style="margin-top:10px"></div>
+    </details>
+  </div>
 </div>
 <div id="dbgpanel" hidden></div>
 
@@ -1453,6 +1498,144 @@ const PIPER = {
 };
 TTS.init();
 
+/* ═════════ BIBLIOTHEK ═════════ */
+const BIB = {
+  index:null,filter:"alle",target:"laut",
+  GROUPS:[["alle","Alle"],["maerchen","Märchen"],["sagen","Sagen & Schelme"],["fabeln","Fabeln"],["abenteuer","Abenteuer"],["sach","Sachtexte"],["geschichten","Geschichten"]],
+  group(art){
+    art=(art||"").toLowerCase();
+    if(/märchen/.test(art))return "maerchen";
+    if(/sage|schelm|lügen/.test(art))return "sagen";
+    if(/fabel/.test(art))return "fabeln";
+    if(/abenteuer/.test(art))return "abenteuer";
+    if(/sach/.test(art))return "sach";
+    return "geschichten";
+  },
+  init(){
+    $("bib-close").onclick=()=>this.close();
+    $("bib").onclick=e=>{if(e.target===$("bib"))this.close()};
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("bib").hidden)this.close()});
+    $("bib-form").onsubmit=e=>{e.preventDefault();this.klexSearch($("bib-q").value.trim())};
+    $("lr-bib").onclick=()=>this.open("laut");
+    $("rs-bib").onclick=()=>this.open("rsvp");
+    $("lr-clear").onclick=()=>{$("lr-text-in").value="";LS.set("lr_text","");LS.del("lr_source");LR.showSource();$("lr-text-in").focus()};
+  },
+  async load(){
+    if(this.index)return this.index;
+    const r=await fetch("texte/index.json",{cache:"no-cache"});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    this.index=await r.json();
+    return this.index;
+  },
+  open(target){
+    this.target=target;
+    $("bib").hidden=false;document.body.style.overflow="hidden";
+    this.render();
+  },
+  close(){$("bib").hidden=true;document.body.style.overflow=""},
+  async render(){
+    const list=$("bib-list"),fl=$("bib-filter");
+    try{await this.load()}
+    catch(e){
+      dlog("BIB","index.json nicht ladbar: "+e.message);
+      list.innerHTML='<div class="notice">Die Bibliothek konnte nicht geladen werden. Sie funktioniert über eine Webadresse (z. B. GitHub Pages), nicht beim Öffnen als Datei.</div>';
+      return;
+    }
+    const present=new Set(this.index.map(t=>this.group(t.art)));
+    fl.innerHTML=this.GROUPS.filter(([k])=>k==="alle"||present.has(k))
+      .map(([k,l])=>`<button class="chip ${k===this.filter?"sel":""}" data-g="${k}">${l}</button>`).join("");
+    fl.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{this.filter=b.dataset.g;this.render()});
+    const items=this.index.filter(t=>this.filter==="alle"||this.group(t.art)===this.filter);
+    list.innerHTML=items.map(t=>`<button class="bibitem" data-id="${esc(t.id)}">${esc(t.titel)}
+      <span class="small">${esc(t.art)} · ${t.woerter} Wörter · ${esc(t.alter||"")} · ${esc(t.quelle)}</span></button>`).join("")
+      ||'<div class="hint">Keine Texte in dieser Gruppe.</div>';
+    list.querySelectorAll(".bibitem").forEach(b=>b.onclick=()=>this.pick(this.index.find(t=>t.id===b.dataset.id),b));
+  },
+  async pick(t,btn){
+    if(!t)return;
+    if(btn)btn.classList.add("loading");
+    try{
+      const r=await fetch("texte/"+t.datei,{cache:"no-cache"});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const text=(await r.text()).trim();
+      this.use(text,t.titel,t.quelle);
+    }catch(e){
+      dlog("BIB","Text nicht ladbar: "+e.message);
+      if(btn){btn.classList.remove("loading");btn.querySelector(".small").textContent="Konnte nicht geladen werden – Internet?"}
+    }
+  },
+  /* Text ins Ziel übernehmen (Lesen oder Reader) */
+  use(text,title,source){
+    if(this.target==="rsvp"){
+      RSVP.setText(text,title);
+      $("rs-fileinfo").textContent+=" Quelle: "+source+".";
+      this.close();
+      showTab("rsvp");
+    }else{
+      $("lr-text-in").value=text;LS.set("lr_text",text);
+      LS.set("lr_source",{title,source});
+      LR.showSource();
+      this.close();
+      showTab("laut");
+      LR.show("setup");
+      $("lr-text-in").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  },
+
+  /* ── Klexikon (MediaWiki-API, anonym mit origin=*) ── */
+  KLEX:"https://klexikon.zum.de/api.php",
+  async klexApi(params){
+    const u=this.KLEX+"?"+new URLSearchParams(Object.assign({format:"json",formatversion:"2",origin:"*"},params));
+    const r=await fetch(u);
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    return r.json();
+  },
+  klexError(e){
+    dlog("BIB","Klexikon: "+e.message);
+    return navigator.onLine
+      ?'<div class="notice">Klexikon ist gerade nicht erreichbar. Entweder hakt das Internet, oder der Klexikon-Server erlaubt den Zugriff aus Apps nicht. Die Texte der Bibliothek oben gehen immer.</div>'
+      :'<div class="notice">Kein Internet – die Klexikon-Suche braucht eine Verbindung. Die Texte der Bibliothek oben gehen auch offline.</div>';
+  },
+  async klexSearch(q){
+    const box=$("bib-klex");
+    if(q.length<2){box.innerHTML='<div class="hint">Bitte ein Wort eingeben, z. B. „Vulkan“ oder „Delfin“.</div>';return}
+    box.innerHTML='<div class="hint">Suche „'+esc(q)+'“ …</div>';
+    try{
+      const j=await this.klexApi({action:"query",list:"search",srsearch:q,srlimit:"8",srprop:"snippet"});
+      const hits=(j.query&&j.query.search)||[];
+      if(!hits.length){box.innerHTML='<div class="hint">Nichts gefunden – probier ein anderes Wort.</div>';return}
+      box.innerHTML=hits.map(h=>`<button class="bibitem" data-t="${esc(h.title)}">${esc(h.title)}
+        <span class="small">${esc(String(h.snippet||"").replace(/<[^>]+>/g,""))} …</span></button>`).join("")
+        +'<div class="source">Quelle: Klexikon – das Kinderlexikon, klexikon.zum.de · Texte unter CC BY-SA 4.0</div>';
+      box.querySelectorAll(".bibitem").forEach(b=>b.onclick=()=>this.klexPick(b.dataset.t,b));
+    }catch(e){box.innerHTML=this.klexError(e)}
+  },
+  /* Artikelanfang holen: Absätze bis etwa 200 Wörter */
+  async klexPick(title,btn){
+    if(btn)btn.classList.add("loading");
+    try{
+      const j=await this.klexApi({action:"parse",page:title,prop:"text",redirects:"1",disabletoc:"1",disableeditsection:"1"});
+      const html=j.parse&&(typeof j.parse.text==="string"?j.parse.text:j.parse.text&&j.parse.text["*"]);
+      if(!html)throw new Error("kein Text");
+      const d=new DOMParser().parseFromString(html,"text/html");
+      d.querySelectorAll("table,.infobox,.thumb,figure,.gallery,sup,style,script,.mw-editsection,.toc,.navbox,.hatnote,.dablink").forEach(e=>e.remove());
+      const paras=[];let n=0;
+      for(const p of d.querySelectorAll("p")){
+        const t=p.textContent.replace(/\[\d+\]/g,"").replace(/\s+/g," ").trim();
+        if(t.length<40)continue;
+        paras.push(t);n+=t.split(" ").length;
+        if(n>=180)break;
+      }
+      if(!paras.length)throw new Error("Artikel ohne Fließtext");
+      const text=paras.join("\n\n");
+      this.use(text,title,`Klexikon – das Kinderlexikon (klexikon.zum.de), Artikel „${(j.parse&&j.parse.title)||title}“, Lizenz CC BY-SA 4.0`);
+    }catch(e){
+      if(btn){btn.classList.remove("loading");btn.querySelector(".small").textContent="Konnte nicht geladen werden: "+e.message}
+    }
+  },
+};
+BIB.init();
+
 /* ═════════ LESEN ═════════ */
 const LR = {
   cfg:Object.assign({mode:"self",quiz:true},LS.get("lr_cfg",{})),
@@ -1463,7 +1646,8 @@ const LR = {
 
   init(){
     $("lr-text-in").value=fixMoji(LS.get("lr_text",""))||SAMPLE_TEXT;
-    $("lr-text-in").oninput=e=>LS.set("lr_text",e.target.value);
+    $("lr-text-in").oninput=e=>{LS.set("lr_text",e.target.value);if(!e.target.value.trim()){LS.del("lr_source");this.showSource()}};
+    this.showSource();
     $("lr-quiz").checked=this.cfg.quiz;
     $("lr-quiz").onchange=e=>{this.cfg.quiz=e.target.checked;this.save()};
     $("lr-mode-self").onclick=()=>{this.cfg.mode="self";this.save();this.applyMode()};
@@ -1524,6 +1708,11 @@ const LR = {
     this.applyMode();
   },
   save(){LS.set("lr_cfg",this.cfg)},
+  showSource(){
+    const src=LS.get("lr_source",null),el=$("lr-source");
+    el.hidden=!src;
+    if(src)el.textContent="📖 "+src.title+" · "+src.source;
+  },
   applyMode(){
     const tts=this.cfg.mode==="tts";
     $("lr-mode-self").classList.toggle("sel",!tts);
