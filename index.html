@@ -680,6 +680,7 @@ const BW = {
   clearTimers(){clearTimeout(this.timer);clearTimeout(this.listenTimer)},
   stopRec(){
     if(this.rec){try{this.rec.onresult=null;this.rec.onend=null;this.rec.onerror=null;this.rec.abort()}catch(e){}this.rec=null}
+    this.micOpen=false;
     clearTimeout(this.listenTimer);
   },
   stage(html,cls){const st=$("bw-stage");st.className="stage"+(cls?" "+cls:"");st.innerHTML=html},
@@ -694,22 +695,31 @@ const BW = {
     if(!this.q.length)return;
     this.cur=this.q[0];
     let c=3;
+    // Mikro schon jetzt öffnen: iOS braucht bis zu 3 s, bis es wirklich zuhört –
+    // sonst ist das Wort längst gesagt, bevor das Mikro offen ist
+    if(this.useMic())this.preListen(this.cur);
     const showC=()=>this.stage(`<div class="countnum">${c}</div>`);
     showC();
     const tick=()=>{c--;
       if(c>0){showC();this.timer=setTimeout(tick,550)}
       else{
+        this.armed=true;                       // ab jetzt zählt Gehörtes
         this.stage(`<div class="bigword ${this.cur.length>10?"long":""}">${esc(this.cur)}</div>`,"flash");
         this.timer=setTimeout(()=>{this.phaseGuess()},SPEEDS[this.cfg.speed].ms);
       }};
     this.timer=setTimeout(tick,550);
+  },
+  preListen(word){
+    this.stopRec();this.matched=false;this.heardFinal="";this.armed=false;this.micOpen=false;
+    this.listenUntil=Date.now()+2000+LISTEN_MS;
+    this.startRec(word);
   },
   phaseGuess(){
     if(this.useMic()){
       this.stage(`<div class="center" style="padding:16px;width:100%">
         <div class="micpulse">🎤</div>
         <p style="font-size:18px;margin:10px 0 4px;font-weight:700">Sag das Wort laut!</p>
-        <div id="bw-heard" class="small" style="min-height:22px;font-style:italic">Ich höre zu …</div>
+        <div id="bw-heard" class="small" style="min-height:22px;font-style:italic">${this.micOpen?"Ich höre zu …":"Mikro öffnet sich …"}</div>
         <div class="row" style="margin-top:14px">
           <button class="btn good" style="font-size:15px;min-height:44px;padding:8px 16px" onclick="BW.manual(true)">✓ war richtig</button>
           <button class="btn retry" style="font-size:15px;min-height:44px;padding:8px 16px" onclick="BW.manual(false)">↻ nochmal</button>
@@ -723,12 +733,18 @@ const BW = {
     }
   },
   listen(word){
-    this.stopRec();this.matched=false;this.heardFinal="";
+    this.armed=true;
     this.listenUntil=Date.now()+LISTEN_MS;
-    this.startRec(word);
+    if(!this.rec){this.matched=false;this.heardFinal="";this.startRec(word)}   // Vorab-Session schon beendet
+    else this.showMicState();
+    clearTimeout(this.listenTimer);
     this.listenTimer=setTimeout(()=>{
       if(!this.matched){this.stopRec();this.reveal()}
     },LISTEN_MS);
+  },
+  showMicState(){
+    const h=$("bw-heard");
+    if(h&&!this.heardFinal.trim())h.textContent=this.micOpen?"Ich höre zu …":"Mikro öffnet sich …";
   },
   startRec(word){
     let rec;
@@ -737,7 +753,7 @@ const BW = {
     rec.continuous=!IS_SAFARI;
     rec._t0=Date.now();rec._err="";
     dlog("BW","Session-Start | Ziel: "+word+" | continuous="+rec.continuous);
-    rec.onaudiostart=()=>dlog("BW","audiostart (Mikro offen)");
+    rec.onaudiostart=()=>{dlog("BW","audiostart (Mikro offen)");this.micOpen=true;this.showMicState()};
     rec.onsoundstart=()=>dlog("BW","soundstart (Ton erkannt)");
     rec.onspeechstart=()=>dlog("BW","speechstart (Sprache erkannt)");
     rec.onspeechend=()=>dlog("BW","speechend");
@@ -748,8 +764,9 @@ const BW = {
         for(let j=0;j<ev.results[i].length;j++)all+=" "+ev.results[i][j].transcript;
         if(ev.results[i].isFinal)this.heardFinal+=" "+ev.results[i][0].transcript;
       }
-      dlog("BW","result: „"+all.trim()+"“");
+      dlog("BW","result: „"+all.trim()+"“"+(this.armed?"":" (vor dem Wort – ignoriert)"));
       BW.fastFails=0;
+      if(!this.armed){this.heardFinal="";return}
       const h=$("bw-heard");if(h)h.textContent="„"+all.trim().split(/\s+/).slice(-4).join(" ")+"“";
       if(!this.matched&&(matchWord(all,word)||matchWord(this.heardFinal,word))){
         this.matched=true;this.stopRec();this.autoResult(true,word)}
@@ -757,6 +774,14 @@ const BW = {
     rec.onerror=ev=>{
       dlog("BW","ERROR: "+(ev.error||"?")+(ev.message?" – "+ev.message:""));
       rec._err=(ev.error||"")+" "+(ev.message||"");
+      if(/not visible/i.test(ev.message||"")||document.hidden){
+        // Seite im Hintergrund: nicht sperren, nach der Rückkehr weitermachen
+        this.stopRec();this.clearTimers();this.waitVisible=true;return;
+      }
+      if(ev.error==="audio-capture"){
+        $("bw-micnote").hidden=false;
+        $("bw-micnote").textContent="Das Mikrofon liefert gerade keinen Ton (vom System stummgeschaltet oder von einer anderen App belegt). Kurz warten oder die Seite neu laden.";
+      }
       if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){
         this.micBlocked=true;this.stopRec();this.micBlockedNotice();this.phaseGuess();
       }};
@@ -1686,9 +1711,14 @@ const LR = {
       const err=ev.error||"unbekannt";
       dlog("LR","ERROR: "+err+(ev.message?" – "+ev.message:""));
       rec._err=err+" "+(ev.message||"");
-      if(err==="not-allowed"||err==="service-not-allowed"){
+      if(/not visible/i.test(ev.message||"")||document.hidden){
+        this.waitVisible=true;                 // Seite im Hintergrund: nach der Rückkehr weitermachen
+        $("lr-status").textContent="⏸ Pause – die Seite war im Hintergrund.";
+      }else if(err==="not-allowed"||err==="service-not-allowed"){
         this.running=false;
-        $("lr-status").textContent="⚠️ Mikrofon-Zugriff blockiert (Schloss-Symbol in der Adressleiste prüfen).";
+        $("lr-status").textContent="⚠️ Mikrofon-Zugriff blockiert. "+micSystemTip();
+      }else if(err==="audio-capture"){
+        $("lr-status").textContent="⚠️ Das Mikrofon liefert keinen Ton (stummgeschaltet oder von einer anderen App belegt) – ich versuche es weiter.";
       }else if(err==="network"){
         $("lr-status").textContent="⚠️ Spracherkennung braucht Internet.";
       }else if(err!=="no-speech"&&err!=="aborted"){
@@ -1719,8 +1749,8 @@ const LR = {
       }
       if(!this.everRes&&this.sessCount>=5&&!rec._err)
         $("lr-status").textContent="⚠️ Ich verstehe nichts. "+micSystemTip();
-      if(this.running&&!this.finished&&!this.paused)
-        setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec)this.startRec()},250);
+      if(this.running&&!this.finished&&!this.paused&&!this.waitVisible)
+        setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec&&!this.waitVisible)this.startRec()},rec._err?900:250);
     };
     // Safari-Flush: 3,5s ohne Ergebnis -> Session sauber stoppen (stop() zwingt
     // WebKit zur Auslieferung des Puffers), onend startet danach automatisch neu
@@ -1893,6 +1923,13 @@ LR.init();
 
 dlog("SYS","App geladen | "+navigator.userAgent);
 dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | SpeechSynthesis: "+(HAS_TTS?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | iOS: "+(IS_IOS?"JA":"nein")+" | Standalone: "+(IS_STANDALONE?"JA":"nein")+" | Protokoll: "+location.protocol);
+
+/* Rückkehr in den Vordergrund: Mikrofon-Sessions wieder aufnehmen */
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)return;
+  if(BW.waitVisible){BW.waitVisible=false;if(!$("bw-play").hidden&&BW.cur){BW.phaseGuess()}}
+  if(LR.waitVisible){LR.waitVisible=false;if(LR.running&&!LR.finished&&LR.mode==="self"&&!LR.rec)setTimeout(()=>LR.startRec(),300)}
+});
 
 /* letzten Tab wiederherstellen */
 showTab(LS.get("tab","blitz"));
