@@ -1581,16 +1581,23 @@ const LR = {
     rec.onsoundstart=()=>dlog("LR","soundstart (Ton erkannt)");
     rec.onspeechstart=()=>dlog("LR","speechstart (Sprache erkannt)");
     rec.onspeechend=()=>dlog("LR","speechend");
-    rec.onstart=()=>{if(this.running&&!this.paused)$("lr-status").textContent="🎤 Ich höre zu – lies laut!"};
+    rec.onstart=()=>{
+      if(!this.running||this.paused)return;
+      $("lr-status").textContent="🎤 Ich höre zu – lies laut!";
+      // Kommt in den ersten Sekunden gar nichts an, deutlich sagen, woran es liegen kann
+      if(!this.everRes){clearTimeout(this.quietTimer);
+        this.quietTimer=setTimeout(()=>{if(this.running&&!this.everRes&&!this.finished)
+          $("lr-status").textContent="🎤 Ich höre noch nichts – lauter und näher ans Mikro sprechen? (Mikrofon erlaubt?)"},6000)}
+    };
     rec.onresult=ev=>{
       rec._gotResult=true;this.everRes++;
-      dlog("LR","result #"+this.everRes);
-      this.fastFails=0;
+      this.fastFails=0;clearTimeout(this.quietTimer);
       let all="",fin="";
       for(let i=0;i<ev.results.length;i++){
         all+=" "+ev.results[i][0].transcript;
         if(ev.results[i].isFinal)fin+=" "+ev.results[i][0].transcript;
       }
+      dlog("LR","result #"+this.everRes+": „"+all.trim()+"“");
       rec._final=fin;
       const hd=$("lr-heard");
       if(hd&&all.trim())hd.textContent="Gehört: „"+all.trim().split(/\s+/).slice(-6).join(" ")+"“";
@@ -1654,6 +1661,7 @@ const LR = {
       setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec)this.startRec()},600)}
   },
   stopRec(){
+    clearTimeout(this.quietTimer);
     if(this.rec){const r=this.rec;this.rec=null;
       clearInterval(r._flush);
       try{r.onresult=null;r.onend=null;r.onerror=null;r.abort()}catch(e){}}
