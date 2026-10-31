@@ -360,11 +360,12 @@
         <details class="more" id="lr-piperbox">
           <summary>Offline-Stimme (Beta) <span class="tag beta" style="margin-left:8px">neu</span></summary>
           <div class="hint" style="margin-top:0">Eine natürliche Stimme, die direkt im Browser rechnet – unabhängig von den Stimmen deines Geräts.
-            Beim Einschalten wird einmalig ein Stimmpaket geladen (ca. <span id="lr-pipersize">60</span> MB) plus etwa 30 MB Laufzeit; danach bleibt alles im Browser gespeichert. Braucht ein halbwegs aktuelles Gerät.</div>
+            Beim Einschalten wird einmalig ein Stimmpaket geladen (ca. <span id="lr-pipersize">21</span> MB) plus etwa 30 MB Laufzeit; danach bleibt es im Browser gespeichert. Die kleine Stimme „Eva“ läuft auch auf Handys flüssig, die großen brauchen ein aktuelles Gerät und beim Start etwas Geduld.</div>
           <label class="check" style="margin-top:6px"><input type="checkbox" id="lr-piper"> Offline-Stimme verwenden</label>
           <select id="lr-pipervoice" aria-label="Offline-Stimme wählen" style="margin-top:6px"></select>
           <div class="piperbar" id="lr-piperbar" hidden><div></div></div>
-          <div class="hint" id="lr-piperstatus"></div>
+          <div class="between" style="margin-top:6px"><div class="hint" id="lr-piperstatus" style="margin:0"></div>
+            <button class="btn ghost" id="lr-pipercancel" hidden style="min-height:40px;padding:4px 10px">Abbrechen</button></div>
         </details>
       </div>
 
@@ -1046,7 +1047,7 @@ RSVP.init();
 /* ═════════ STIMME (Web Speech API + optionale Offline-Stimme) ═════════ */
 const HAS_TTS=(()=>{try{return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance&&typeof speechSynthesis.getVoices==="function")}catch(e){return false}})();
 const TTS = {
-  cfg:Object.assign({voice:"auto",rate:0.95,pitch:1,piper:false,piperVoice:"de_DE-thorsten-low"},LS.get("tts_cfg",{})),
+  cfg:Object.assign({voice:"auto",rate:0.95,pitch:1,piper:false,piperVoice:"de_DE-eva_k-x_low"},LS.get("tts_cfg",{})),
   _list:[],_sig:"",onVoices:null,
 
   init(){
@@ -1220,104 +1221,137 @@ const TTS = {
   },
 };
 
-/* ── Offline-Stimme: Piper (VITS) per WebAssembly, erst bei Bedarf geladen ── */
+/* ── Offline-Stimme: Piper (VITS) per WebAssembly, erst bei Bedarf geladen ──
+   Läuft komplett in einem Web Worker (Modell wird dort EINMAL geladen und wiederverwendet).
+   Ohne Worker gibt es keine Offline-Stimme – ein Rückfall auf den Hauptthread würde die Oberfläche blockieren. */
 const PIPER = {
-  // Modul von jsDelivr (ESM); Stimmen von Hugging Face. Beides wird vom Browser zwischengespeichert.
-  MODULE_URL:"https://cdn.jsdelivr.net/npm/@diffusionstudio/vits-web@1.0.3/+esm",
-  VOICES:[
-    {id:"de_DE-thorsten-low",label:"Thorsten (männlich, ruhig)",mb:60},
-    {id:"de_DE-kerstin-low",label:"Kerstin (weiblich)",mb:60},
-    {id:"de_DE-ramona-low",label:"Ramona (weiblich)",mb:60},
-    {id:"de_DE-eva_k-x_low",label:"Eva (weiblich, kleines Paket)",mb:25},
+  // Modulquellen (ESM, inkl. onnxruntime-web); die zweite ist Ersatz, falls die erste nicht lädt.
+  MODULE_URLS:[
+    "https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.3/+esm",
+    "https://esm.sh/@mintplex-labs/piper-tts-web@1.0.3",
   ],
-  mod:null,worker:null,ready:false,busy:false,cache:new Map(),audio:null,onStatus:null,onProgress:null,_req:0,_pend:new Map(),
+  VOICES:[
+    {id:"de_DE-eva_k-x_low",label:"Eva (weiblich, klein & schnell)",mb:21},
+    {id:"de_DE-thorsten-low",label:"Thorsten (männlich) – groß, langsamer",mb:63},
+    {id:"de_DE-kerstin-low",label:"Kerstin (weiblich) – groß, langsamer",mb:63},
+  ],
+  INIT_TIMEOUT:6*60000, PREDICT_TIMEOUT:90000,
+  worker:null,ready:false,busy:false,voiceId:"",cache:new Map(),audio:null,onStatus:null,onProgress:null,_req:0,_pend:new Map(),_tick:null,
 
   status(msg){dlog("PIPER",msg);if(this.onStatus)this.onStatus(msg)},
-  /* Das Sprachmodul läuft in einem Web Worker, damit die Oberfläche beim Rechnen nicht stockt.
-     Klappt das nicht (ältere Browser), wird es im Hauptthread geladen. */
   workerSrc(){
-    return `let mod;
-      self.onmessage=async e=>{
+    return `let mod,session,chain=Promise.resolve();
+      const say=(id,m)=>self.postMessage(Object.assign({id},m));
+      async function loadMod(){
+        if(mod)return mod;let last;
+        for(const u of ${JSON.stringify(this.MODULE_URLS)}){
+          try{mod=await import(u);self.postMessage({log:"Modul geladen: "+u});return mod}catch(e){last=e;self.postMessage({log:"Modul-Fehler "+u+": "+(e&&e.message||e)})}
+        }
+        throw last||new Error("Sprachmodul nicht ladbar");
+      }
+      self.onmessage=e=>{
         const {id,op,args}=e.data;
-        try{
-          if(!mod)mod=await import(${JSON.stringify(this.MODULE_URL)});
-          let r;
-          if(op==="stored")r=await mod.stored();
-          else if(op==="download")r=await mod.download(args.voiceId,p=>self.postMessage({id,progress:{loaded:p.loaded,total:p.total}}));
-          else if(op==="predict")r=await mod.predict({text:args.text,voiceId:args.voiceId});
-          self.postMessage({id,ok:true,result:r});
-        }catch(err){self.postMessage({id,ok:false,error:String(err&&err.message||err)})}
+        const run=async()=>{
+          try{
+            const m=await loadMod();
+            let r;
+            if(op==="stored")r=await m.stored();
+            else if(op==="init"){
+              session=await m.TtsSession.create({voiceId:args.voiceId,
+                progress:p=>say(id,{progress:{loaded:p.loaded,total:p.total,url:p.url}}),
+                logger:t=>self.postMessage({log:String(t)})});
+              r=true;
+            }
+            else if(op==="predict"){ if(!session)throw new Error("Stimme nicht vorbereitet"); r=await session.predict(args.text); }
+            say(id,{ok:true,result:r});
+          }catch(err){say(id,{ok:false,error:String(err&&err.message||err)})}
+        };
+        chain=chain.then(run,run);   // strikt nacheinander: nie zwei Synthesen gleichzeitig
       };`;
   },
-  call(op,args,onProgress){
+  call(op,args,onProgress,timeout){
     return new Promise((res,rej)=>{
+      if(!this.worker)return rej(new Error("Kein Worker"));
       const id=++this._req;
-      this._pend.set(id,{res,rej,onProgress});
+      const to=setTimeout(()=>{this._pend.delete(id);rej(new Error("Zeitüberschreitung ("+op+")"))},timeout||this.PREDICT_TIMEOUT);
+      this._pend.set(id,{res,rej,onProgress,to});
       this.worker.postMessage({id,op,args});
     });
   },
-  async load(){
-    if(this.mod||this.worker)return;
-    this.status("Lade Sprachmodul …");
-    try{
-      const url=URL.createObjectURL(new Blob([this.workerSrc()],{type:"text/javascript"}));
-      const w=new Worker(url,{type:"module"});
-      w.onmessage=e=>{
-        const d=e.data,p=this._pend.get(d.id);if(!p)return;
-        if(d.progress){if(p.onProgress)p.onProgress(d.progress);return}
-        this._pend.delete(d.id);
-        d.ok?p.res(d.result):p.rej(new Error(d.error));
-      };
-      w.onerror=ev=>{dlog("PIPER","Worker-Fehler: "+(ev.message||"?"));for(const [id,p] of this._pend){p.rej(new Error(ev.message||"Worker-Fehler"))}this._pend.clear()};
-      this.worker=w;
-      await this.call("stored",{});       // Probelauf: lädt das Modul im Worker
-    }catch(e){
-      dlog("PIPER","Worker nicht möglich ("+(e&&e.message||e)+") – lade im Hauptthread");
-      if(this.worker){try{this.worker.terminate()}catch(x){}this.worker=null}
-      this.mod=await import(this.MODULE_URL);
-    }
+  startWorker(){
+    if(this.worker)return;
+    if(typeof Worker==="undefined")throw new Error("Dieser Browser unterstützt keine Web Worker");
+    const url=URL.createObjectURL(new Blob([this.workerSrc()],{type:"text/javascript"}));
+    const w=new Worker(url,{type:"module"});
+    w.onmessage=e=>{
+      const d=e.data;
+      if(d.log){dlog("PIPER",d.log);return}
+      const p=this._pend.get(d.id);if(!p)return;
+      if(d.progress){if(p.onProgress)p.onProgress(d.progress);return}
+      clearTimeout(p.to);this._pend.delete(d.id);
+      d.ok?p.res(d.result):p.rej(new Error(d.error));
+    };
+    w.onerror=ev=>{dlog("PIPER","Worker-Fehler: "+(ev.message||"?"));this.failAll(ev.message||"Worker-Fehler")};
+    this.worker=w;
   },
-  op(name,args,onProgress){
-    if(this.worker)return this.call(name,args,onProgress);
-    if(name==="stored")return this.mod.stored();
-    if(name==="download")return this.mod.download(args.voiceId,onProgress);
-    return this.mod.predict({text:args.text,voiceId:args.voiceId});
+  failAll(msg){for(const [id,p] of this._pend){clearTimeout(p.to);p.rej(new Error(msg))}this._pend.clear()},
+  /* Worker beenden (Abbrechen, Stimmwechsel, Fehler) */
+  reset(){
+    this.failAll("abgebrochen");
+    if(this.worker){try{this.worker.terminate()}catch(e){}this.worker=null}
+    this.ready=false;this.busy=false;this.voiceId="";this.cache.clear();clearInterval(this._tick);
+    if(this.onProgress)this.onProgress(1);
+    if(this.onStatus)this.onStatus("");
   },
-  /* Modul + gewähltes Stimmpaket bereitstellen (Download mit Fortschritt) */
+  /* Worker + gewähltes Stimmpaket bereitstellen (Download mit Fortschritt, Modell einmal laden) */
   async prepare(){
-    if(this.busy)return false;
+    if(this.ready&&this.voiceId===TTS.cfg.piperVoice)return true;
+    if(this._running)return this._running;              // läuft schon: darauf warten statt abbrechen
+    this._running=this._prepare().finally(()=>{this._running=null});
+    return this._running;
+  },
+  async _prepare(){
+    const id=TTS.cfg.piperVoice,t0=Date.now();
+    if(this.voiceId&&this.voiceId!==id)this.reset();     // anderes Modell: frisch starten
     this.busy=true;
     try{
-      await this.load();
-      const id=TTS.cfg.piperVoice;
-      const stored=await this.op("stored",{});
-      if(!stored.includes(id)){
-        this.status("Lade Stimmpaket … (nur beim ersten Mal)");
-        await this.op("download",{voiceId:id},p=>{
-          if(this.onProgress&&p&&p.total)this.onProgress(p.loaded/p.total);
-        });
-      }
+      this.startWorker();
+      const stored=await this.call("stored",{},null,120000);
+      const fresh=!stored.includes(id);
+      const mb=(this.VOICES.find(v=>v.id===id)||{}).mb||60;
+      this.status(fresh?"Lade Stimmpaket (ca. "+mb+" MB, nur beim ersten Mal) …":"Lade Stimme aus dem Speicher …");
+      let phase="download";
+      clearInterval(this._tick);
+      this._tick=setInterval(()=>{if(phase==="init")this.status("Bereite Stimme vor … "+Math.round((Date.now()-t0)/1000)+" s (große Modelle brauchen auf dem Handy eine Weile)")},1000);
+      await this.call("init",{voiceId:id},p=>{
+        if(!p.total){this.status("Lade Stimmpaket … "+(p.loaded/1048576).toFixed(0)+" MB");return}
+        if(this.onProgress)this.onProgress(p.loaded/p.total);
+        this.status("Lade Stimmpaket … "+(p.loaded/1048576).toFixed(0)+" / "+(p.total/1048576).toFixed(0)+" MB");
+        if(p.loaded>=p.total)phase="init";
+      },this.INIT_TIMEOUT);
+      phase="init";
       if(this.onProgress)this.onProgress(1);
-      // Erster Aufruf wärmt die Laufzeit auf
       this.status("Bereite Stimme vor …");
-      await this.synth("Hallo.");
-      this.ready=true;
-      this.status("Offline-Stimme bereit.");
+      await this.synth("Hallo.");               // wärmt Phonemizer und Modell auf
+      clearInterval(this._tick);
+      this.ready=true;this.voiceId=id;
+      this.status("Offline-Stimme bereit ("+Math.round((Date.now()-t0)/1000)+" s).");
       return true;
     }catch(e){
-      this.ready=false;
-      this.status("Offline-Stimme konnte nicht geladen werden: "+(e&&e.message||e));
+      clearInterval(this._tick);
+      const msg=String(e&&e.message||e);
+      this.reset();
+      this.status(msg==="abgebrochen"?"Abgebrochen.":"Offline-Stimme konnte nicht geladen werden: "+msg);
       return false;
     }finally{this.busy=false}
   },
   async synth(text){
     const key=TTS.cfg.piperVoice+"|"+text;
     if(this.cache.has(key))return this.cache.get(key);
-    await this.load();
-    const p=this.op("predict",{text,voiceId:TTS.cfg.piperVoice});
+    const p=this.call("predict",{text});
     this.cache.set(key,p);
     p.catch(()=>this.cache.delete(key));
-    if(this.cache.size>40){const k=this.cache.keys().next().value;this.cache.delete(k)}
+    if(this.cache.size>30){const k=this.cache.keys().next().value;this.cache.delete(k)}
     return p;
   },
   /* Audio-Element einmal per Nutzergeste freischalten (iOS) */
@@ -1334,7 +1368,8 @@ const PIPER = {
     const finish=()=>{if(finished)return;finished=true;if(cancelEst)cancelEst();a.onended=null;a.onerror=null;done()};
     (async()=>{
       try{
-        // Nächsten Satz schon vorbereiten, damit keine Lücke entsteht
+        if(!this.ready){const ok=await this.prepare();if(!ok)throw new Error("Offline-Stimme nicht bereit")}
+        if(cancelled)return;
         const blob=await this.synth(s.text);
         if(cancelled)return;
         const url=URL.createObjectURL(blob);
@@ -1357,15 +1392,16 @@ const PIPER = {
       cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true},
       pause(){try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
       resume(){try{a.play()}catch(e){}
-        if(h.onWord&&isFinite(a.duration)){const rest=(a.duration-a.currentTime)*1000/TTS.cfg.rate;
+        if(h.onWord&&isFinite(a.duration)&&a.duration>0){const rest=(a.duration-a.currentTime)*1000/TTS.cfg.rate;
           // Restliche Wörter grob neu verteilen
           const frac=a.currentTime/a.duration;const start=Math.floor(frac*s.words.length);
           const sub={words:s.words.slice(start)};if(sub.words.length)cancelEst=TTS.estimateSchedule(sub,rest,h.onWord)}},
     };
   },
-  /* Sätze im Voraus synthetisieren (ohne auf das Ergebnis zu warten) */
+  /* Nur den jeweils nächsten Satz vorbereiten – mehr würde das Gerät ausbremsen */
   prefetch(sents,from){
-    for(let i=from;i<Math.min(from+2,sents.length);i++)this.synth(sents[i].text).catch(()=>{});
+    if(!this.ready)return;
+    if(from<sents.length)this.synth(sents[from].text).catch(()=>{});
   },
 };
 TTS.init();
@@ -1392,8 +1428,8 @@ const LR = {
     $("lr-rate").oninput=e=>{TTS.cfg.rate=+e.target.value;outs();TTS.save()};
     $("lr-pitch").oninput=e=>{TTS.cfg.pitch=+e.target.value;outs();TTS.save()};
     $("lr-voice").onchange=e=>{TTS.cfg.voice=e.target.value;TTS.save();this.renderVoiceMeta()};
-    $("lr-test").onclick=()=>{
-      if(TTS.usePiper())PIPER.unlock();
+    $("lr-test").onclick=async()=>{
+      if(TTS.usePiper()&&!PIPER.ready){if(!(await loadPiper()))return}
       if(!TTS.available()){this.applyMode();return}
       $("lr-test").disabled=true;
       TTS.test(null,msg=>{if(msg)$("lr-piperstatus").textContent=msg});
@@ -1409,17 +1445,28 @@ const LR = {
     if(!pv.value){pv.value=PIPER.VOICES[0].id;TTS.cfg.piperVoice=pv.value}
     $("lr-piper").checked=TTS.cfg.piper;
     $("lr-piperbox").open=TTS.cfg.piper;
+    if(!PIPER.VOICES.some(v=>v.id===TTS.cfg.piperVoice)){TTS.cfg.piperVoice=PIPER.VOICES[0].id;TTS.save();pv.value=TTS.cfg.piperVoice}
     const sizeOut=()=>{const v=PIPER.VOICES.find(x=>x.id===TTS.cfg.piperVoice);$("lr-pipersize").textContent=v?v.mb:60};
     sizeOut();
-    PIPER.onStatus=msg=>{$("lr-piperstatus").textContent=msg};
+    PIPER.onStatus=msg=>{$("lr-piperstatus").textContent=msg;$("lr-pipercancel").hidden=!PIPER.busy};
     PIPER.onProgress=f=>{const b=$("lr-piperbar");b.hidden=f>=1;b.firstElementChild.style.width=Math.round(f*100)+"%"};
+    $("lr-pipercancel").onclick=()=>{PIPER.reset();$("lr-pipercancel").hidden=true;$("lr-piperstatus").textContent="Abgebrochen.";
+      TTS.cfg.piper=false;$("lr-piper").checked=false;TTS.save();this.applyMode()};
+    const loadPiper=async()=>{
+      PIPER.unlock();
+      const ok=await PIPER.prepare();
+      $("lr-pipercancel").hidden=true;
+      if(!ok&&TTS.cfg.piper){TTS.cfg.piper=false;$("lr-piper").checked=false;TTS.save();this.applyMode()}
+      return ok;
+    };
+    this.loadPiper=loadPiper;
     $("lr-piper").onchange=async e=>{
       TTS.cfg.piper=e.target.checked;TTS.save();this.applyMode();
-      if(TTS.cfg.piper){PIPER.unlock();const ok=await PIPER.prepare();if(!ok){TTS.cfg.piper=false;$("lr-piper").checked=false;TTS.save();this.applyMode()}}
+      if(TTS.cfg.piper)await loadPiper();else PIPER.reset();
     };
     pv.onchange=async e=>{
-      TTS.cfg.piperVoice=e.target.value;TTS.save();sizeOut();PIPER.ready=false;PIPER.cache.clear();
-      if(TTS.cfg.piper)await PIPER.prepare();
+      TTS.cfg.piperVoice=e.target.value;TTS.save();sizeOut();PIPER.reset();
+      if(TTS.cfg.piper)await loadPiper();
     };
     $("lr-start").onclick=()=>this.start();
     $("lr-stopbtn").onclick=()=>this.finish(true);
@@ -1529,8 +1576,17 @@ const LR = {
     });
     return true;
   },
-  start(){
+  async start(){
     this.stopAll();
+    if(TTS.usePiper()&&!PIPER.ready){
+      $("lr-start").disabled=true;
+      const ok=await this.loadPiper();
+      $("lr-start").disabled=false;
+      if(!ok){
+        if(HAS_TTS&&TTS.voices().length)$("lr-note").textContent="Offline-Stimme nicht verfügbar – ich nehme die Browserstimme.";
+        else{this.applyMode();return}
+      }
+    }
     if(!this.prepare()){
       $("lr-note").textContent="Bitte zuerst einen Text (mindestens 5 Wörter) einfügen.";
       this.show("setup");return;
