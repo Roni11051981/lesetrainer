@@ -383,7 +383,7 @@
         <details class="more" id="lr-piperbox">
           <summary>Offline-Stimme (Beta) <span class="tag beta" style="margin-left:8px">neu</span></summary>
           <div class="hint" style="margin-top:0">Eine natürliche Stimme, die direkt im Browser rechnet – unabhängig von den Stimmen deines Geräts.
-            Beim Einschalten wird einmalig ein Stimmpaket geladen (ca. <span id="lr-pipersize">21</span> MB) plus etwa 30 MB Laufzeit; danach bleibt es im Browser gespeichert. Die kleine Stimme „Eva“ läuft auch auf Handys flüssig, die großen brauchen ein aktuelles Gerät und beim Start etwas Geduld.</div>
+            Beim Einschalten wird einmalig ein Stimmpaket geladen (ca. <span id="lr-pipersize">63</span> MB) plus etwa 30 MB Laufzeit; danach bleibt es im Browser gespeichert. Der erste Start dauert auf dem Handy eine Weile, danach läuft es flüssig.</div>
           <label class="check" style="margin-top:6px"><input type="checkbox" id="lr-piper"> Offline-Stimme verwenden</label>
           <select id="lr-pipervoice" aria-label="Offline-Stimme wählen" style="margin-top:6px"></select>
           <div class="piperbar" id="lr-piperbar" hidden><div></div></div>
@@ -428,7 +428,7 @@
     </div>
   </div>
 
-  <footer>Lese-Trainer · läuft komplett in deinem Browser · <button id="dbgtoggle">Diagnose</button></footer>
+  <footer>Lese-Trainer · läuft komplett in deinem Browser · <button id="dbgtoggle">Diagnose</button> · <span id="appver"></span></footer>
 </div>
 
 <!-- ═══ BIBLIOTHEK ═══ -->
@@ -456,6 +456,7 @@
 
 <script>
 "use strict";
+const APP_VERSION="2026-11-02.3";
 const $ = id => document.getElementById(id);
 const LS = {
   get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
@@ -579,7 +580,7 @@ const LEVELS = {
 };
 const HOMO = {das:"dass",dass:"das",seid:"seit",seit:"seid",wieder:"wider",wider:"wieder",viel:"fiel",fiel:"viel",meer:"mehr",mehr:"meer",lied:"lid",lid:"lied",
   stadt:"statt",statt:"stadt",war:"wahr",wahr:"war",seite:"saite",saite:"seite",weise:"waise",waise:"weise",malen:"mahlen",mahlen:"malen",
-  rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis"};
+  rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis",ofen:"offen",offen:"ofen",hüte:"hütte",hütte:"hüte",bären:"beeren",beeren:"bären"};
 const SPEEDS = [
   {label:"Entspannt",emoji:"🐢",ms:700},{label:"Flott",emoji:"🐰",ms:400},
   {label:"Blitz",emoji:"⚡",ms:300},{label:"Rakete",emoji:"🚀",ms:200}];
@@ -603,9 +604,35 @@ function micSystemTip(){
   if(/android/i.test(navigator.userAgent))return "Android: Bitte Chrome verwenden und das Mikrofon für diese Seite erlauben (Schloss-Symbol in der Adressleiste).";
   return "Mikrofon für diese Seite erlauben (Schloss-Symbol in der Adressleiste) – am zuverlässigsten in Chrome oder Edge.";
 }
+/* iOS schaltet die Aufnahmequelle nach dem Ende einer Erkennungs-Sitzung stumm („Source is muted“):
+   nur die erste Sitzung nach dem Laden hört zu. Ein offen gehaltener Mikrofon-Stream hält die
+   Audio-Sitzung des Systems am Leben, solange geübt wird. */
+const MIC = {
+  stream:null,disabled:false,
+  keepAlive(){
+    if(!IS_IOS||this.disabled||this.stream||!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia))return;
+    this.stream="pending";
+    navigator.mediaDevices.getUserMedia({audio:true}).then(st=>{
+      if(this.stream!=="pending"){st.getTracks().forEach(t=>t.stop());return}
+      this.stream=st;dlog("SYS","Mikro-Stream offen gehalten (iOS)");
+      st.getAudioTracks().forEach(t=>{
+        t.onmute=()=>dlog("SYS","Mikro-Track stummgeschaltet");
+        t.onunmute=()=>dlog("SYS","Mikro-Track wieder aktiv");
+        t.onended=()=>{dlog("SYS","Mikro-Track beendet");this.stream=null};
+      });
+    }).catch(e=>{this.stream=null;dlog("SYS","Mikro-Stream nicht möglich: "+e.message)});
+  },
+  release(){
+    if(this.stream&&this.stream!=="pending")this.stream.getTracks().forEach(t=>t.stop());
+    this.stream=null;
+  },
+  /* Verträgt sich der offene Stream nicht mit der Erkennung (audio-capture), ohne ihn weitermachen */
+  conflict(){ if(this.stream){dlog("SYS","Mikro-Stream wird freigegeben (Konflikt)");this.release();this.disabled=true;return true} return false },
+};
 /* Erkennung einmal direkt in der Nutzergeste anstoßen: iOS zeigt die Berechtigungsfrage nur dann zuverlässig */
 function micPrime(){
   if(!SR)return;
+  MIC.keepAlive();
   try{const r=new SR();r.lang="de-DE";r.onerror=()=>{};r.onend=()=>{};r.start();setTimeout(()=>{try{r.abort()}catch(e){}},400);dlog("SYS","Mikro-Vorab-Anfrage gesendet")}
   catch(e){dlog("SYS","Mikro-Vorab-Anfrage FEHLER: "+e.message)}
 }
@@ -724,7 +751,7 @@ const BW = {
   },
   clearTimers(){clearTimeout(this.timer);clearTimeout(this.listenTimer)},
   stopRec(){
-    if(this.rec){try{this.rec.onresult=null;this.rec.onend=null;this.rec.onerror=null;this.rec.abort()}catch(e){}this.rec=null}
+    if(this.rec){const r=this.rec;this.rec=null;try{r.onresult=null;r.onend=null;r.onerror=null;IS_IOS?r.stop():r.abort()}catch(e){}}
     this.micOpen=false;
     clearTimeout(this.listenTimer);
   },
@@ -824,6 +851,7 @@ const BW = {
         this.stopRec();this.clearTimers();this.waitVisible=true;return;
       }
       if(ev.error==="audio-capture"){
+        if(MIC.conflict()){this.stopRec();setTimeout(()=>{if(this.cur&&!this.matched)this.startRec(word)},700);return}
         $("bw-micnote").hidden=false;
         $("bw-micnote").textContent="Das Mikrofon liefert gerade keinen Ton (vom System stummgeschaltet oder von einer anderen App belegt). Kurz warten oder die Seite neu laden.";
       }
@@ -851,7 +879,7 @@ const BW = {
           return;
         }
       }
-      if(Date.now()<this.listenUntil-600)setTimeout(()=>{if(!this.matched&&!this.rec)this.startRec(word)},150);
+      if(Date.now()<this.listenUntil-600)setTimeout(()=>{if(!this.matched&&!this.rec)this.startRec(word)},IS_IOS?700:150);
     };
     this.rec=rec;
     try{rec.start();dlog("BW","start() aufgerufen")}
@@ -922,11 +950,11 @@ const BW = {
       tip.hidden=false;
       tip.textContent=`Tipp: Trau dich eine Stufe schneller – ${SPEEDS[this.cfg.speed+1].emoji} ${SPEEDS[this.cfg.speed+1].label}!`;
     }else tip.hidden=true;
-    this.show("done");
+    this.show("done");MIC.release();
     if(stars===3)confetti($("bw-confetti"));
   },
   abort(silent){
-    this.clearTimers();this.stopRec();
+    this.clearTimers();this.stopRec();MIC.release();
     if(!silent)this.show("setup");
   },
 };
@@ -1139,7 +1167,7 @@ RSVP.init();
 /* ═════════ STIMME (Web Speech API + optionale Offline-Stimme) ═════════ */
 const HAS_TTS=(()=>{try{return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance&&typeof speechSynthesis.getVoices==="function")}catch(e){return false}})();
 const TTS = {
-  cfg:Object.assign({voice:"auto",rate:0.95,pitch:1,piper:false,piperVoice:"de_DE-eva_k-x_low"},LS.get("tts_cfg",{})),
+  cfg:Object.assign({voice:"auto",rate:0.95,pitch:1,piper:false,piperVoice:"de_DE-thorsten-medium"},LS.get("tts_cfg",{})),
   _list:[],_sig:"",onVoices:null,
 
   init(){
@@ -1323,9 +1351,9 @@ const PIPER = {
     "https://esm.sh/@mintplex-labs/piper-tts-web@1.0.3",
   ],
   VOICES:[
-    {id:"de_DE-eva_k-x_low",label:"Eva (weiblich, klein & schnell)",mb:21},
-    {id:"de_DE-thorsten-low",label:"Thorsten (männlich) – groß, langsamer",mb:63},
-    {id:"de_DE-kerstin-low",label:"Kerstin (weiblich) – groß, langsamer",mb:63},
+    {id:"de_DE-thorsten-medium",label:"Thorsten (männlich) – empfohlen",mb:63},
+    {id:"de_DE-thorsten_emotional-medium",label:"Thorsten lebhaft (männlich)",mb:63},
+    {id:"de_DE-eva_k-x_low",label:"Eva (weiblich) – klein, kann einzelne Sätze nicht",mb:21},
   ],
   INIT_TIMEOUT:6*60000, PREDICT_TIMEOUT:90000,
   worker:null,ready:false,busy:false,voiceId:"",cache:new Map(),audio:null,onStatus:null,onProgress:null,_req:0,_pend:new Map(),_tick:null,
@@ -1437,12 +1465,19 @@ const PIPER = {
       return false;
     }finally{this.busy=false}
   },
+  /* Sonderzeichen vereinfachen: die kleinen Stimmen kennen nur 130 Lautsymbole, typografische
+     Anführungszeichen u. Ä. ergeben in der Lautumwandlung höhere Nummern → Modellfehler */
+  clean(text){
+    return text.replace(/[„“”»«"]/g,"").replace(/[‚‘’´`]/g,"'").replace(/[–—]/g,", ").replace(/…/g,"...")
+      .replace(/[*_#~^|<>{}\[\]\\]/g," ").replace(/[^\p{L}\p{N}\s.,;:!?'()\-\/%€]/gu," ").replace(/\s+/g," ").replace(/\s+([.,;:!?])/g,"$1").trim();
+  },
   async synth(text){
+    text=this.clean(text)||".";
     const key=TTS.cfg.piperVoice+"|"+text;
     if(this.cache.has(key))return this.cache.get(key);
     const p=this.call("predict",{text});
     this.cache.set(key,p);
-    p.catch(()=>this.cache.delete(key));
+    p.catch(()=>{if(this.cache.get(key)===p)this.cache.delete(key)});
     if(this.cache.size>30){const k=this.cache.keys().next().value;this.cache.delete(k)}
     return p;
   },
@@ -1455,14 +1490,30 @@ const PIPER = {
   },
   /* Einen Satz sprechen; passt in TTS.speak() wie speakBrowser */
   speakSentence(s,h,done,ctrl){
-    let finished=false,cancelled=false,cancelEst=null;
+    let finished=false,cancelled=false,cancelEst=null,delegate=null;
     const a=this.audio||(this.audio=new Audio());
     const finish=()=>{if(finished)return;finished=true;if(cancelEst)cancelEst();a.onended=null;a.onerror=null;done()};
     (async()=>{
       try{
         if(!this.ready){const ok=await this.prepare();if(!ok)throw new Error("Offline-Stimme nicht bereit")}
         if(cancelled)return;
-        const blob=await this.synth(s.text);
+        let blob;
+        try{blob=await this.synth(s.text)}
+        catch(e1){
+          // zweiter Versuch: nur Buchstaben, Ziffern und einfache Satzzeichen
+          const plain=s.text.replace(/[^\p{L}\p{N}\s.,!?]/gu," ").replace(/\s+/g," ").trim();
+          dlog("PIPER","Satz-Fehler, zweiter Versuch vereinfacht: "+(e1&&e1.message||e1));
+          try{blob=await this.synth(plain)}catch(e){blob=null;
+            dlog("PIPER","Satz-Fehler: "+(e&&e.message||e)+" | Satz: „"+s.text+"“")}
+        }
+        if(!blob){
+          // Ein einzelner Satz scheitert (z. B. seltenes Zeichen): Browserstimme springt ein
+          if(HAS_TTS&&TTS.voices().length){
+            if(h.onStatus)h.onStatus("Ein Satz wird mit der Browserstimme gelesen.");
+            finished=true;delegate=TTS.speakBrowser(s,h,done);return;
+          }
+          throw new Error("Satz konnte nicht gesprochen werden");
+        }
         if(cancelled)return;
         const url=URL.createObjectURL(blob);
         a.src=url;a.playbackRate=TTS.cfg.rate;
@@ -1475,15 +1526,16 @@ const PIPER = {
         await a.play();
       }catch(e){
         if(cancelled)return;
+        dlog("PIPER","Fehler: "+(e&&e.message||e));
         this.status("Offline-Stimme: "+(e&&e.message||e));
-        if(h.onError)h.onError(String(e&&e.message||e));
+        if(h.onError)h.onError("Offline-Stimme");
         finish();
       }
     })();
     return {
-      cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true},
-      pause(){try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
-      resume(){try{a.play()}catch(e){}
+      cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true;if(delegate)delegate.cancel()},
+      pause(){if(delegate){delegate.cancel();return}try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
+      resume(){if(delegate){delegate=TTS.speakBrowser(s,h,done);return}try{a.play()}catch(e){}
         if(h.onWord&&isFinite(a.duration)&&a.duration>0){const rest=(a.duration-a.currentTime)*1000/TTS.cfg.rate;
           // Restliche Wörter grob neu verteilen
           const frac=a.currentTime/a.duration;const start=Math.floor(frac*s.words.length);
@@ -1814,7 +1866,7 @@ const LR = {
   },
   async start(){
     this.stopAll();
-    if(TTS.usePiper()&&!PIPER.ready){
+    if(this.cfg.mode==="tts"&&TTS.usePiper()&&!PIPER.ready){
       $("lr-start").disabled=true;
       const ok=await this.loadPiper();
       $("lr-start").disabled=false;
@@ -1837,6 +1889,7 @@ const LR = {
     this.show("run");
     if(this.mode==="self"){
       if(!SR){this.running=false;this.show("setup");this.applyMode();return}
+      MIC.keepAlive();this.deafSessions=0;
       $("lr-ttsctrls").hidden=true;
       $("lr-status").textContent="🎤 Lies laut – ich höre zu!";
       this.startRec();
@@ -1907,7 +1960,7 @@ const LR = {
         this.running=false;
         $("lr-status").textContent="⚠️ Mikrofon-Zugriff blockiert. "+micSystemTip();
       }else if(err==="audio-capture"){
-        $("lr-status").textContent="⚠️ Das Mikrofon liefert keinen Ton (stummgeschaltet oder von einer anderen App belegt) – ich versuche es weiter.";
+        if(!MIC.conflict())$("lr-status").textContent="⚠️ Das Mikrofon liefert keinen Ton (stummgeschaltet oder von einer anderen App belegt) – ich versuche es weiter.";
       }else if(err==="network"){
         $("lr-status").textContent="⚠️ Spracherkennung braucht Internet.";
       }else if(err!=="no-speech"&&err!=="aborted"){
@@ -1938,8 +1991,14 @@ const LR = {
       }
       if(!this.everRes&&this.sessCount>=5&&!rec._err)
         $("lr-status").textContent="⚠️ Ich verstehe nichts. "+micSystemTip();
+      // Sitzung hatte das Mikro offen, aber nichts gehört, obwohl vorher Erkennung lief → iOS-Taubheit
+      if(!rec._gotResult&&this.everRes&&Date.now()-rec._t0>6000){
+        this.deafSessions=(this.deafSessions||0)+1;
+        dlog("LR","taube Sitzung #"+this.deafSessions);
+        if(this.deafSessions>=2)$("lr-status").textContent="⚠️ Das Mikrofon hört nach einer Pause nicht mehr zu (iPhone-Eigenheit). Tipp: ■ Beenden, dann neu starten – notfalls die Seite neu laden.";
+      }else if(rec._gotResult)this.deafSessions=0;
       if(this.running&&!this.finished&&!this.paused&&!this.waitVisible)
-        setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec&&!this.waitVisible)this.startRec()},rec._err?900:250);
+        setTimeout(()=>{if(this.running&&!this.finished&&!this.paused&&!this.rec&&!this.waitVisible)this.startRec()},rec._err?900:(IS_IOS?700:250));
     };
     // Safari-Flush: 3,5s ohne Ergebnis -> Session sauber stoppen (stop() zwingt
     // WebKit zur Auslieferung des Puffers), onend startet danach automatisch neu
@@ -1961,7 +2020,7 @@ const LR = {
     clearTimeout(this.quietTimer);
     if(this.rec){const r=this.rec;this.rec=null;
       clearInterval(r._flush);
-      try{r.onresult=null;r.onend=null;r.onerror=null;r.abort()}catch(e){}}
+      try{r.onresult=null;r.onend=null;r.onerror=null;IS_IOS?r.stop():r.abort()}catch(e){}}
   },
   align(toks){
     const F=this.flat;let i=0;
@@ -2002,7 +2061,8 @@ const LR = {
       onSentenceDone:(i,s)=>{s.words.forEach(w=>{this.flat[w.idx].el.className="w ok"})},
       onPause:()=>{$("lr-status").textContent="⏸ Pause – tipp auf „Weiter“"},
       onResume:()=>{$("lr-status").textContent="🔊 Hör zu und lies leise mit"},
-      onError:e=>{$("lr-status").textContent="⚠️ Vorlesen gestört ("+e+") – ich versuche weiterzumachen."},
+      onError:e=>{$("lr-status").textContent="⚠️ Vorlesen gestört – ich versuche weiterzumachen."},
+      onStatus:m=>{$("lr-status").textContent="🔊 "+m},
       onDone:()=>{
         if(!this.running)return;
         for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
@@ -2067,7 +2127,7 @@ const LR = {
   finish(manual){
     if(this.finished&&!this.running)return;
     this.finished=true;this.running=false;
-    this.stopRec();
+    this.stopRec();MIC.release();
     if(this.ctrl){this.ctrl.stop();this.ctrl=null}
     if(HAS_TTS)speechSynthesis.cancel();
     clearInterval(this.tInt);this.tInt=null;
@@ -2102,7 +2162,7 @@ const LR = {
   },
   stopAll(){
     this.running=false;this.finished=true;
-    this.stopRec();
+    this.stopRec();MIC.release();
     if(this.ctrl){this.ctrl.stop();this.ctrl=null}
     if(HAS_TTS)speechSynthesis.cancel();
     clearInterval(this.tInt);this.tInt=null;
@@ -2110,7 +2170,8 @@ const LR = {
 };
 LR.init();
 
-dlog("SYS","App geladen | "+navigator.userAgent);
+$("appver").textContent="v"+APP_VERSION;
+dlog("SYS","App geladen | Version "+APP_VERSION+" | "+navigator.userAgent);
 dlog("SYS","SpeechRecognition: "+(SR?"vorhanden":"FEHLT")+" | SpeechSynthesis: "+(HAS_TTS?"vorhanden":"FEHLT")+" | Safari-Modus: "+(IS_SAFARI?"JA":"nein")+" | iOS: "+(IS_IOS?"JA":"nein")+" | Standalone: "+(IS_STANDALONE?"JA":"nein")+" | Protokoll: "+location.protocol);
 
 /* Rückkehr in den Vordergrund: Mikrofon-Sessions wieder aufnehmen */
