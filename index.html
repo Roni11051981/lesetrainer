@@ -579,7 +579,7 @@ const LEVELS = {
 };
 const HOMO = {das:"dass",dass:"das",seid:"seit",seit:"seid",wieder:"wider",wider:"wieder",viel:"fiel",fiel:"viel",meer:"mehr",mehr:"meer",lied:"lid",lid:"lied",
   stadt:"statt",statt:"stadt",war:"wahr",wahr:"war",seite:"saite",saite:"seite",weise:"waise",waise:"weise",malen:"mahlen",mahlen:"malen",
-  rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis"};
+  rad:"rat",rat:"rad",tod:"tot",tot:"tod",bis:"biss",biss:"bis",ofen:"offen",offen:"ofen",hüte:"hütte",hütte:"hüte",bären:"beeren",beeren:"bären"};
 const SPEEDS = [
   {label:"Entspannt",emoji:"🐢",ms:700},{label:"Flott",emoji:"🐰",ms:400},
   {label:"Blitz",emoji:"⚡",ms:300},{label:"Rakete",emoji:"🚀",ms:200}];
@@ -1437,7 +1437,14 @@ const PIPER = {
       return false;
     }finally{this.busy=false}
   },
+  /* Sonderzeichen vereinfachen: die kleinen Stimmen kennen nur 130 Lautsymbole, typografische
+     Anführungszeichen u. Ä. ergeben in der Lautumwandlung höhere Nummern → Modellfehler */
+  clean(text){
+    return text.replace(/[„“”»«"]/g,"").replace(/[‚‘’´`]/g,"'").replace(/[–—]/g,", ").replace(/…/g,"...")
+      .replace(/[*_#~^|<>{}\[\]\\]/g," ").replace(/[^\p{L}\p{N}\s.,;:!?'()\-\/%€]/gu," ").replace(/\s+/g," ").replace(/\s+([.,;:!?])/g,"$1").trim();
+  },
   async synth(text){
+    text=this.clean(text)||".";
     const key=TTS.cfg.piperVoice+"|"+text;
     if(this.cache.has(key))return this.cache.get(key);
     const p=this.call("predict",{text});
@@ -1455,14 +1462,24 @@ const PIPER = {
   },
   /* Einen Satz sprechen; passt in TTS.speak() wie speakBrowser */
   speakSentence(s,h,done,ctrl){
-    let finished=false,cancelled=false,cancelEst=null;
+    let finished=false,cancelled=false,cancelEst=null,delegate=null;
     const a=this.audio||(this.audio=new Audio());
     const finish=()=>{if(finished)return;finished=true;if(cancelEst)cancelEst();a.onended=null;a.onerror=null;done()};
     (async()=>{
       try{
         if(!this.ready){const ok=await this.prepare();if(!ok)throw new Error("Offline-Stimme nicht bereit")}
         if(cancelled)return;
-        const blob=await this.synth(s.text);
+        let blob;
+        try{blob=await this.synth(s.text)}
+        catch(e){
+          // Ein einzelner Satz scheitert (z. B. seltenes Zeichen): Browserstimme springt ein
+          dlog("PIPER","Satz-Fehler: "+(e&&e.message||e)+" | Satz: „"+s.text+"“");
+          if(HAS_TTS&&TTS.voices().length){
+            if(h.onStatus)h.onStatus("Ein Satz wird mit der Browserstimme gelesen.");
+            finished=true;delegate=TTS.speakBrowser(s,h,done);return;
+          }
+          throw new Error("Satz konnte nicht gesprochen werden");
+        }
         if(cancelled)return;
         const url=URL.createObjectURL(blob);
         a.src=url;a.playbackRate=TTS.cfg.rate;
@@ -1475,15 +1492,16 @@ const PIPER = {
         await a.play();
       }catch(e){
         if(cancelled)return;
+        dlog("PIPER","Fehler: "+(e&&e.message||e));
         this.status("Offline-Stimme: "+(e&&e.message||e));
-        if(h.onError)h.onError(String(e&&e.message||e));
+        if(h.onError)h.onError("Offline-Stimme");
         finish();
       }
     })();
     return {
-      cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true},
-      pause(){try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
-      resume(){try{a.play()}catch(e){}
+      cancel(){cancelled=true;if(cancelEst)cancelEst();try{a.pause()}catch(e){};finished=true;if(delegate)delegate.cancel()},
+      pause(){if(delegate){delegate.cancel();return}try{a.pause()}catch(e){};if(cancelEst){cancelEst();cancelEst=null}},
+      resume(){if(delegate){delegate=TTS.speakBrowser(s,h,done);return}try{a.play()}catch(e){}
         if(h.onWord&&isFinite(a.duration)&&a.duration>0){const rest=(a.duration-a.currentTime)*1000/TTS.cfg.rate;
           // Restliche Wörter grob neu verteilen
           const frac=a.currentTime/a.duration;const start=Math.floor(frac*s.words.length);
@@ -1814,7 +1832,7 @@ const LR = {
   },
   async start(){
     this.stopAll();
-    if(TTS.usePiper()&&!PIPER.ready){
+    if(this.cfg.mode==="tts"&&TTS.usePiper()&&!PIPER.ready){
       $("lr-start").disabled=true;
       const ok=await this.loadPiper();
       $("lr-start").disabled=false;
@@ -2002,7 +2020,8 @@ const LR = {
       onSentenceDone:(i,s)=>{s.words.forEach(w=>{this.flat[w.idx].el.className="w ok"})},
       onPause:()=>{$("lr-status").textContent="⏸ Pause – tipp auf „Weiter“"},
       onResume:()=>{$("lr-status").textContent="🔊 Hör zu und lies leise mit"},
-      onError:e=>{$("lr-status").textContent="⚠️ Vorlesen gestört ("+e+") – ich versuche weiterzumachen."},
+      onError:e=>{$("lr-status").textContent="⚠️ Vorlesen gestört – ich versuche weiterzumachen."},
+      onStatus:m=>{$("lr-status").textContent="🔊 "+m},
       onDone:()=>{
         if(!this.running)return;
         for(let j=startIdx;j<this.paraEnd[q];j++)this.flat[j].el.className="w ok";
