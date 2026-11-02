@@ -11,7 +11,7 @@ Statische Web-App für Kinder ab ca. 10 Jahren (läuft auf GitHub Pages, kein Se
 - Web Speech API; die beste deutsche Stimme wird automatisch gewählt (Microsoft „Online (Natural)“, Google, Apple Premium/Enhanced bevorzugt), alle deutschen Stimmen sind im Menü nach Qualität gruppiert.
 - Tempo und Tonhöhe sind einstellbar und werden im Browser gespeichert.
 - Vorgelesen wird satzweise mit Pause/Weiter/Nächster Satz/Stopp; das aktuelle Wort wird im Text markiert.
-- **Offline-Stimme (Beta):** optional zuschaltbare Piper-Neuralstimme per WebAssembly (`@mintplex-labs/piper-tts-web`, Modell wird einmal geladen und wiederverwendet), läuft in einem Web Worker. Wird erst beim Einschalten geladen (Eva 21 MB, Thorsten/Kerstin 63 MB, plus ca. 30 MB Laufzeit; danach im Browser gespeichert).
+- **Offline-Stimme (Beta):** optional zuschaltbare Piper-Neuralstimme per WebAssembly (`@mintplex-labs/piper-tts-web`, Modell wird einmal geladen und wiederverwendet), läuft in einem Web Worker. Wird erst beim Einschalten geladen (Thorsten medium 63 MB empfohlen – neuere Stimmen mit 256 Lautsymbolen; Eva x_low 21 MB hat nur 130 Symbole und scheitert an einzelnen Sätzen, dann springt die Browserstimme ein; plus ca. 30 MB Laufzeit; danach im Browser gespeichert). Auf iOS hält die App während des Übens einen Mikrofon-Stream offen, weil Safari sonst nur die erste Erkennungs-Sitzung hört.
 
 ## Bibliothek
 
