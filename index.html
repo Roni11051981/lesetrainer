@@ -456,7 +456,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="2026-11-02.4";
+const APP_VERSION="2026-11-02.5";
 const $ = id => document.getElementById(id);
 const LS = {
   get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
@@ -1022,7 +1022,7 @@ const RSVP = {
     $("rs-back10").onclick=()=>{this.jump(-10)};
     $("rs-restart").onclick=()=>{this.pause();this.idx=0;this.renderWord();this.savePos()};
     document.addEventListener("keydown",e=>{
-      if($("view-rsvp").hidden||e.target.tagName==="TEXTAREA")return;
+      if($("view-rsvp").hidden||!$("bib").hidden||/^(TEXTAREA|INPUT|SELECT)$/.test(e.target.tagName))return;
       if(e.code==="Space"){e.preventDefault();this.toggle()}
       else if(e.key==="ArrowLeft")this.jump(-10);
       else if(e.key==="ArrowRight")this.jump(10);
