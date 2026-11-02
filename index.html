@@ -456,7 +456,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="2026-11-02.3";
+const APP_VERSION="2026-11-02.4";
 const $ = id => document.getElementById(id);
 const LS = {
   get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d} },
@@ -633,6 +633,7 @@ const MIC = {
 function micPrime(){
   if(!SR)return;
   MIC.keepAlive();
+  if(IS_IOS){ if(LS.get("mic_primed",false))return; LS.set("mic_primed",true) }
   try{const r=new SR();r.lang="de-DE";r.onerror=()=>{};r.onend=()=>{};r.start();setTimeout(()=>{try{r.abort()}catch(e){}},400);dlog("SYS","Mikro-Vorab-Anfrage gesendet")}
   catch(e){dlog("SYS","Mikro-Vorab-Anfrage FEHLER: "+e.message)}
 }
@@ -676,6 +677,9 @@ const BW = {
   micBlocked:false,
   q:[],cur:null,total:0,firstTry:0,retried:new Set(),streak:0,best:0,
   timer:null,listenTimer:null,rec:null,matched:false,heardFinal:"",
+  // iOS: eine durchlaufende Erkennungs-Sitzung pro Runde. Nach einem erzwungenen stop()
+  // ist dort jede weitere Sitzung taub; nur von selbst beendete Sitzungen lassen sich neu starten.
+  persist:IS_IOS,roundActive:false,transcript:"",baseline:"",heardNew:"",
 
   initUI(){
     if(!SR){this.cfg.mic=false;$("bw-micnote").hidden=false;
@@ -737,6 +741,7 @@ const BW = {
     if(pool.length<3)return;
     this.q=shuffle(pool).slice(0,Math.min(ROUND,pool.length));
     this.total=this.q.length;this.firstTry=0;this.retried=new Set();this.streak=0;this.best=0;
+    this.roundActive=true;this.transcript="";this.baseline="";this.heardNew="";
     this.micBlockedNotice();
     this.show("play");this.renderPlay();this.phaseIdle();
   },
@@ -776,15 +781,30 @@ const BW = {
       if(c>0){showC();this.timer=setTimeout(tick,550)}
       else{
         this.armed=true;                       // ab jetzt zählt Gehörtes
+        if(this.persist)this.baseline=this.transcript||"";
         this.stage(`<div class="bigword ${this.cur.length>10?"long":""}">${esc(this.cur)}</div>`,"flash");
         this.timer=setTimeout(()=>{this.phaseGuess()},SPEEDS[this.cfg.speed].ms);
       }};
     this.timer=setTimeout(tick,550);
   },
   preListen(word){
-    this.stopRec();this.matched=false;this.heardFinal="";this.armed=false;this.micOpen=false;
+    this.matched=false;this.heardFinal="";this.heardNew="";this.armed=false;
     this.listenUntil=Date.now()+2000+LISTEN_MS;
+    if(this.persist){
+      this.baseline=this.transcript||"";
+      if(!this.rec)this.startRec(word);else dlog("BW","Sitzung läuft weiter | Ziel: "+word);
+      return;
+    }
+    this.stopRec();this.micOpen=false;
     this.startRec(word);
+  },
+  /* Nur das seit dem Aufblitzen Gesagte (durchlaufende Sitzung) */
+  newSince(t){
+    const b=this.baseline||"";
+    if(!b)return t;
+    if(t.startsWith(b))return t.slice(b.length).trim();
+    const n=b.split(/\s+/).filter(Boolean).length;
+    return t.split(/\s+/).filter(Boolean).slice(Math.max(0,n-1)).join(" ");
   },
   phaseGuess(){
     if(this.useMic()){
@@ -811,13 +831,14 @@ const BW = {
     else this.showMicState();
     clearTimeout(this.listenTimer);
     this.listenTimer=setTimeout(()=>{
-      if(!this.matched){this.stopRec();this.reveal()}
+      if(!this.matched){if(!this.persist)this.stopRec();this.reveal()}
     },LISTEN_MS);
   },
   showMicState(){
     const h=$("bw-heard");
-    if(h&&!this.heardFinal.trim())h.textContent=this.micOpen?"Ich höre zu …":"Mikro öffnet sich …";
+    if(h&&!this.heardFinal.trim()&&!this.heardNew.trim())h.textContent=this.micOpen?"Ich höre zu …":"Mikro öffnet sich …";
   },
+  heardText(){return (this.persist?this.heardNew:this.heardFinal).trim()},
   startRec(word){
     let rec;
     try{rec=new SR()}catch(e){dlog("BW","new SR() FEHLER: "+e.message);this.micBlocked=true;this.stopRec();this.micBlockedNotice();this.phaseGuess();return}
@@ -838,10 +859,14 @@ const BW = {
       }
       dlog("BW","result: „"+all.trim()+"“"+(this.armed?"":" (vor dem Wort – ignoriert)"));
       BW.fastFails=0;
+      this.transcript=all.trim();
       if(!this.armed){this.heardFinal="";return}
-      const h=$("bw-heard");if(h)h.textContent="„"+all.trim().split(/\s+/).slice(-4).join(" ")+"“";
-      if(!this.matched&&(matchWord(all,word)||matchWord(this.heardFinal,word))){
-        this.matched=true;this.stopRec();this.autoResult(true,word)}
+      const target=this.cur||word;
+      let text=all.trim();
+      if(this.persist){text=this.newSince(text);this.heardNew=text}
+      const h=$("bw-heard");if(h&&text)h.textContent="„"+text.split(/\s+/).slice(-4).join(" ")+"“";
+      if(!this.matched&&target&&(matchWord(text,target)||(!this.persist&&matchWord(this.heardFinal,target)))){
+        this.matched=true;if(!this.persist)this.stopRec();this.autoResult(true,target)}
     };
     rec.onerror=ev=>{
       dlog("BW","ERROR: "+(ev.error||"?")+(ev.message?" – "+ev.message:""));
@@ -859,8 +884,23 @@ const BW = {
         this.micBlocked=true;this.stopRec();this.micBlockedNotice();this.phaseGuess();
       }};
     rec.onend=()=>{
-      dlog("BW","end | final bisher: „"+this.heardFinal.trim()+"“");
-      if(this.matched||this.rec!==rec)return;
+      dlog("BW","end | final bisher: „"+this.heardFinal.trim()+"“"+(this.persist?" | neu: „"+this.heardNew+"“":""));
+      if(this.rec!==rec)return;
+      if(this.persist){
+        this.rec=null;this.transcript="";this.baseline="";this.micOpen=false;
+        const quick=Date.now()-rec._t0<1500&&rec._err;
+        if(quick){this.fastFails=(this.fastFails||0)+1;
+          if(this.fastFails>=6){dlog("BW","Abbruch: System blockiert Erkennung");this.micBlocked=true;
+            $("bw-micnote").hidden=false;$("bw-micnote").textContent="⚠️ Das System blockiert die Spracherkennung. "+micSystemTip();
+            clearTimeout(this.listenTimer);if(this.cur&&!this.matched)this.reveal();return}}
+        if(this.armed&&!this.matched&&this.heardNew.trim()){
+          const target=this.cur;this.armed=false;clearTimeout(this.listenTimer);this.autoResult(false,target);
+        }
+        // Von selbst beendet (Sprechpause): wie beim Lesen kurz darauf weiterhören
+        if(this.roundActive&&this.useMic())setTimeout(()=>{if(this.roundActive&&!this.rec&&this.useMic())this.startRec(this.cur||"")},quick?1200:700);
+        return;
+      }
+      if(this.matched)return;
       this.rec=null;
       if(matchWord(this.heardFinal,word)){
         this.matched=true;clearTimeout(this.listenTimer);this.autoResult(true,word);return}
@@ -894,7 +934,7 @@ const BW = {
         <div class="small">Richtig!</div></div>`,"ok");
       this.timer=setTimeout(()=>this.advance(true,word),1000);
     }else{
-      const heard=this.heardFinal.trim().split(/\s+/).slice(-4).join(" ");
+      const heard=this.heardText().split(/\s+/).slice(-4).join(" ");
       this.stage(`<div class="center pop" style="padding:12px">
         <div style="font:600 40px var(--read);color:var(--warn)">${esc(word)}</div>
         ${heard?`<div class="small" style="margin-top:4px">Ich habe „${esc(heard)}“ verstanden</div>`:""}
@@ -903,8 +943,9 @@ const BW = {
     }
   },
   reveal(){
-    this.stopRec();this.clearTimers();
-    if(this.useMic()&&!this.heardFinal.trim()){
+    if(!this.persist)this.stopRec();
+    this.clearTimers();
+    if(this.useMic()&&!this.heardText()){
       this.silentRounds=(this.silentRounds||0)+1;
       if(this.silentRounds===3){$("bw-micnote").hidden=false;
         $("bw-micnote").textContent="Ich habe dreimal nichts verstanden. "+micSystemTip()}
@@ -916,7 +957,7 @@ const BW = {
         <button class="btn retry" style="min-width:140px" onclick="BW.manual(false)">↻ Nochmal</button>
       </div></div>`);
   },
-  manual(ok){this.stopRec();this.clearTimers();this.advance(ok,this.cur)},
+  manual(ok){if(!this.persist)this.stopRec();this.clearTimers();this.armed=false;this.advance(ok,this.cur)},
   advance(ok,word){
     const rest=this.q.slice(1);
     if(ok){
@@ -950,11 +991,12 @@ const BW = {
       tip.hidden=false;
       tip.textContent=`Tipp: Trau dich eine Stufe schneller – ${SPEEDS[this.cfg.speed+1].emoji} ${SPEEDS[this.cfg.speed+1].label}!`;
     }else tip.hidden=true;
-    this.show("done");MIC.release();
+    this.roundActive=false;this.stopRec();
+    this.show("done");
     if(stars===3)confetti($("bw-confetti"));
   },
   abort(silent){
-    this.clearTimers();this.stopRec();MIC.release();
+    this.roundActive=false;this.clearTimers();this.stopRec();MIC.release();
     if(!silent)this.show("setup");
   },
 };
